@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="UTF-8">
+<script>
+// Intercept Canvas rendering to hide the '*' character drawn next to AC Voltage Sources
+(function() {
+    var originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+        if (text === "*") return; // Ignore the asterisk
+        if (maxWidth !== undefined) {
+            return originalFillText.call(this, text, x, y, maxWidth);
+        } else {
+            return originalFillText.call(this, text, x, y);
+        }
+    };
+    var originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+    CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+        if (text === "*") return; // Ignore the asterisk
+        if (maxWidth !== undefined) {
+            return originalStrokeText.call(this, text, x, y, maxWidth);
+        } else {
+            return originalStrokeText.call(this, text, x, y);
+        }
+    };
+})();
+</script>
+
+  <link rel="manifest" href="/circuit/manifest.json">
+  
+    <!-- Properties can be specified to influence deferred binding -->
+    <meta name='gwt:property' content='locale=en_UK'>
+    
+    
+    <!-- Titles are optional, but useful -->
+    <title>CircuitJS1 Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+    /* Premium Modern Styles */
+    :root {
+        /* Default is Dark theme variables */
+        --bg-color: #0b0f19;
+        --panel-bg: #0f172a;
+        --border-color: #1e293b;
+        --border-hover: #334155;
+        --text-color: #f1f5f9;
+        --text-muted: #94a3b8;
+        --button-bg: #1e293b;
+        --button-hover: #334155;
+        --button-border: #334155;
+        --active-color: #38bdf8;
+        --active-bg: #1e293b;
+    }
+
+    body.theme-light {
+        --bg-color: #f8fafc;
+        --panel-bg: #f8fafc;
+        --border-color: #e2e8f0;
+        --border-hover: #cbd5e1;
+        --text-color: #0f172a;
+        --text-muted: #475569;
+        --button-bg: #f1f5f9;
+        --button-hover: #e2e8f0;
+        --button-border: #cbd5e1;
+        --active-color: #0284c7;
+        --active-bg: #e2e8f0;
+    }
+
+    body.theme-dark {
+        --bg-color: #0b0f19;
+        --panel-bg: #0f172a;
+        --border-color: #1e293b;
+        --border-hover: #334155;
+        --text-color: #f1f5f9;
+        --text-muted: #94a3b8;
+        --button-bg: #1e293b;
+        --button-hover: #334155;
+        --button-border: #334155;
+        --active-color: #38bdf8;
+        --active-bg: #1e293b;
+    }
+
+    body, td, th, select, input, textarea, button, .gwt-MenuItem, .gwt-Label, .gwt-Button, .topButton, .topButton-red {
+        font-family: 'Outfit', sans-serif !important;
+    }
+    
+    .gwt-Label {
+        color: var(--text-color) !important;
+    }
+    
+    body {
+        background-color: var(--bg-color) !important;
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.2s ease;
+    }
+
+    .disabled {
+        color: var(--text-muted) !important;
+    }
+    
+    .topSpace {
+        margin-top: 16px;
+    }
+    
+    .cursorPointer {
+        cursor: default;
+    }
+    
+    .cursorCross {
+        cursor: crosshair;
+    }
+
+    .cursorSplitter {
+        cursor: row-resize;
+    }
+
+    .gwt-MenuItem-disabled {
+        color: var(--text-muted) !important;
+    }
+    
+    .offScreen {
+        position: absolute;
+        right: 101%;
+        overflow: hidden;
+    }
+    
+    .gwt-Frame {
+        scrolling="no";
+        border: 0px !important;
+    }
+
+    .gwt-MenuItem {
+        font-size: 13px !important;
+        font-weight: 400;
+        padding: 6px 12px !important;
+        border-radius: 4px;
+        color: var(--text-color) !important;
+        transition: background 0.15s ease;
+    }
+    
+    .gwt-MenuItem-selected {
+        background-color: var(--active-bg) !important;
+        color: var(--active-color) !important;
+    }
+
+    .gwt-MenuBar-horizontal {
+        font-size: 13px !important;
+        background: var(--panel-bg) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 4px 8px !important;
+        color: var(--text-color) !important;
+    }
+
+    .gwt-Label-selected {
+        font-size: 1.3em;
+        font-weight: 700;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--active-color) !important;
+    }
+    
+    .gwt-Label-1off {
+        color: var(--text-muted);
+    }
+
+    .gwt-Label-2off {
+        font-size: 0.8em;
+        color: var(--text-muted);
+    }
+
+    .gwt-Button.chbut {
+        padding: 6px 12px;
+        margin: 4px;
+        border-radius: 6px;
+        border: 1px solid var(--button-border);
+        background: var(--button-bg);
+        color: var(--text-color);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .gwt-Button.chbut:hover {
+        background: var(--button-hover);
+        border-color: var(--border-hover);
+    }
+
+    .gwt-Button.chbut.chsel {
+        font-weight: 700;
+        background: var(--active-color);
+        color: var(--bg-color);
+        border-color: var(--active-color);
+    }
+
+    .gwt-Button.chbut-black {
+        background: var(--panel-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .gwt-Button.chbut-white {
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+    }
+
+    .gwt-TextBox.scalebox {
+        width: 100px;
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: 1px solid var(--button-border);
+        border-radius: 4px;
+        padding: 4px;
+    }
+
+    .gwt-Button.expand-but {
+        line-height: 0;
+        font-size: 13px;
+        margin-right: 5px;
+        border-radius: 4px;
+        display: inline-block;
+        text-align: center;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        margin-bottom: 1px;
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: none;
+        cursor: pointer;
+    }
+
+    .topButton-red {
+        margin: 2px 4px;
+        padding: 6px 12px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff !important;
+        background-color: #ef4444; 
+        border: 1px solid #dc2626;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .topButton-red:hover {
+        background-color: #dc2626;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+
+    .topButton {
+        margin: 2px 4px;
+        padding: 6px 12px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-color) !important;
+        background-color: var(--button-bg); 
+        border: 1px solid var(--button-border);
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .topButton:hover {
+        background-color: var(--button-hover);
+        border-color: var(--border-hover);
+    }
+
+    /* compact variant for side-pane buttons */
+    .topButton.compact,
+    .topButton-red.compact {
+        font-size: 11px;
+        padding: 4px 8px;
+        margin: 2px 3px;
+    }
+
+    .radioPanel label {
+        margin-right: 15px;
+        color: var(--text-muted);
+    }
+    
+    /* Modern Glassmorphic Toolbar wrapper */
+    .modern-toolbar {
+        background: var(--panel-bg) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 4px 8px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        transition: all 0.2s ease;
+    }
+    
+    .toolbar-icon-button {
+        color: var(--text-muted) !important;
+        padding: 2px 3px !important;
+        margin-right: 2px !important;
+        border-radius: 4px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .toolbar-icon-button:hover {
+        color: var(--active-color) !important;
+        background-color: var(--active-bg) !important;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: var(--bg-color);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: var(--button-bg);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--button-hover);
+    }
+
+    /* GWT vertical dropdown menu bars */
+    .gwt-MenuBar-vertical {
+        font-size: 13px !important;
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 6px !important;
+        color: var(--text-color) !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 8px !important;
+    }
+    
+    .gwt-MenuBar-vertical .gwt-MenuItem {
+        margin: 2px 0 !important;
+    }
+
+    /* GWT general popup panels */
+    .gwt-PopupPanel {
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 8px !important;
+        padding: 4px !important;
+    }
+
+    /* GWT DialogBox styling */
+    .gwt-DialogBox {
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
+        border-radius: 12px !important;
+        font-family: 'Outfit', sans-serif !important;
+        color: var(--text-color) !important;
+        overflow: hidden;
+    }
+    
+    .gwt-DialogBox table, 
+    .gwt-DialogBox td {
+        background: var(--panel-bg) !important;
+    }
+    
+    .gwt-DialogBox .gwt-Label {
+        color: var(--text-color) !important;
+    }
+
+    .gwt-DialogBox .Caption {
+        background: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        font-weight: 600 !important;
+        padding: 10px 16px !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        cursor: move;
+    }
+
+    /* Dialog box inner widgets */
+    .gwt-DialogBox .gwt-TextBox, 
+    .gwt-DialogBox .gwt-TextArea,
+    .gwt-TextBox, 
+    .gwt-TextArea {
+        background-color: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--button-border) !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .gwt-DialogBox .gwt-TextBox:focus, 
+    .gwt-DialogBox .gwt-TextArea:focus,
+    .gwt-TextBox:focus, 
+    .gwt-TextArea:focus {
+        outline: none !important;
+        border-color: var(--active-color) !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+    }
+
+    .gwt-DialogBox .gwt-ListBox,
+    .gwt-ListBox {
+        background-color: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--button-border) !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+        outline: none !important;
+    }
+
+    .gwt-DialogBox .gwt-Button,
+    .gwt-Button {
+        padding: 6px 16px !important;
+        border-radius: 6px !important;
+        border: 1px solid var(--button-border) !important;
+        background: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .gwt-DialogBox .gwt-Button:hover,
+    .gwt-Button:hover {
+        background: var(--button-hover) !important;
+        border-color: var(--border-hover) !important;
+        color: var(--text-color) !important;
+    }
+    /* We removed the native scope CSS fix because it interfered with Custom ICs, and we now have a Custom Graph Modal! */
+    
+    /* Premium Selection State (No Grey Background) */
+    .toolbar-icon-button {
+        background-color: transparent !important;
+        opacity: 0.5 !important;
+        transition: all 0.2s ease !important;
+    }
+    .toolbar-icon-button:hover {
+        opacity: 0.8 !important;
+    }
+    .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
+    .toolbar-icon-button[style*="#1e293b"],
+    .toolbar-icon-button[style*="background-color"] {
+        background-color: transparent !important;
+        opacity: 1 !important;
+        transform: scale(1.15) !important;
+        filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.5)) !important;
+    }
+    
+
+    /* Allow toolbar to wrap on smaller screens */
+    .toolbar-icon-button {
+        display: inline-block !important;
+    }
+    
+    
+
+    /* Hide Zoom 100% button */
+    .toolbar-icon-button[title*="Zoom 100%"] {
+        display: none !important;
+    }
+    
+
+    /* Hide Duplicate button */
+    .toolbar-icon-button[title*="Duplicate"] {
+        display: none !important;
+    }
+    
+</style>
+
+<link rel="stylesheet" href="font/fontello.css">
+
+
+    
+    <!-- ZERO FLICKER ULTIMATE FIX V2 -->
+    <style>
+        .hidden-by-me { 
+            display: none !important; 
+            opacity: 0 !important; 
+            visibility: hidden !important; 
+            width: 0 !important; 
+            height: 0 !important; 
+            pointer-events: none !important; 
+        }
+    </style>
+    <script>
+    (function() {
+        var observer = new MutationObserver(function(mutations) {
+            
+            // 1. Eradicate duplicate IDs to prevent clone bugs
+            var runs = document.querySelectorAll('#btnCustomRun');
+            for(var i=1; i<runs.length; i++) runs[i].remove();
+            
+            var stops = document.querySelectorAll('#btnCustomStop');
+            for(var i=1; i<stops.length; i++) stops[i].remove();
+            
+            var graphs = document.querySelectorAll('#btnCustomGraphToolbar');
+            for(var i=1; i<graphs.length; i++) graphs[i].remove();
+
+            // 2. Hide native buttons safely and PERMANENTLY using a CSS class
+            var btns = document.querySelectorAll('button, .topButton, .gwt-Button');
+            for(var i=0; i<btns.length; i++) {
+                if (btns[i].id === 'btnCustomRun' || btns[i].id === 'btnCustomStop') continue;
+                var t = (btns[i].innerText || '').trim();
+                
+                // If it's a native button we don't want, tag it with our bulletproof class
+                if(t === 'Reset' || t === 'Scope' || t === 'Run/STOP' || t === 'RUN' || t === 'STOP' || t.includes('STOP')) {
+                    btns[i].classList.add('hidden-by-me');
+                }
+            }
+            
+            // 3. Hide Mode labels
+            var labels = document.querySelectorAll('.gwt-Label');
+            for(var i=0; i<labels.length; i++) {
+                if ((labels[i].innerText || '').includes('Mode:')) labels[i].classList.add('hidden-by-me');
+            }
+            
+            // 4. Hide My ICs
+            var allEls = document.querySelectorAll('div, span, h1, h2, h3');
+            for(var i=0; i<allEls.length; i++) {
+                if((allEls[i].innerText || '').trim() === 'My ICs') {
+                    allEls[i].classList.add('hidden-by-me');
+                }
+            }
+            
+            
+            
+            // 5. Build our toolbar
+            if (document.body && !document.getElementById('myUltimateToolbar')) {
+                var tb = document.createElement('div');
+                tb.id = 'myUltimateToolbar';
+                tb.style.position = 'absolute';
+                tb.style.right = '10px';
+                tb.style.top = '10px';
+                tb.style.zIndex = '999999';
+                tb.style.display = 'flex';
+                tb.style.gap = '8px';
+                tb.style.alignItems = 'center';
+                
+                var gBtn = document.getElementById('btnCustomGraphToolbar');
+                if (gBtn) {
+                    tb.appendChild(gBtn);
+                    gBtn.style.display = 'inline-block';
+                }
+                
+                var rBtn = document.createElement("button");
+                rBtn.id = "btnCustomRun";
+                rBtn.className = "topButton";
+                rBtn.innerHTML = "&#9658; RUN";
+                rBtn.style.background = "#22c55e";
+                rBtn.style.color = "#fff";
+                rBtn.style.fontWeight = "bold";
+                rBtn.style.border = "none";
+                rBtn.onclick = function() { 
+                    var sim = window.CircuitJS1; if(sim) {
+                        if(typeof sim.setSimRunning === 'function') sim.setSimRunning(true);
+                        else if(typeof sim.setStopped === 'function') sim.setStopped(false);
+                    }
+                };
+                tb.appendChild(rBtn);
+                
+                var sBtn = document.createElement("button");
+                sBtn.id = "btnCustomStop";
+                sBtn.className = "topButton";
+                sBtn.innerHTML = "&#9632; STOP";
+                sBtn.style.background = "#ef4444";
+                sBtn.style.color = "#fff";
+                sBtn.style.fontWeight = "bold";
+                sBtn.style.border = "none";
+                sBtn.onclick = function() { 
+                    var sim = window.CircuitJS1; if(sim) {
+                        if(typeof sim.setSimRunning === 'function') sim.setSimRunning(false);
+                        else if(typeof sim.setStopped === 'function') sim.setStopped(true);
+                    }
+                };
+                tb.appendChild(sBtn);
+                
+                document.body.appendChild(tb);
+            }
+        });
+        
+        observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    })();
+    </script>
+    
+    
+
+    <style>
+        /* Permanently hide all dynamic 404 error iframes spawned by the simulator */
+        iframe:not(#__gwt_historyFrame) {
+            display: none !important;
+        }
+    </style>
+    
+
+    
+</head>
+  <body class="theme-dark">
+  <!-- Include the next line to allow support for dropbox import/export. You will need your own app key. -->
+  <!--<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="YOUR_KEY"></script>-->
+
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAwoELkKP2IIv18E8isKOAhnYh6-ng0nBE",
+      authDomain: "circuit-simulator-cloud.firebaseapp.com",
+      projectId: "circuit-simulator-cloud",
+      storageBucket: "circuit-simulator-cloud.firebasestorage.app",
+      messagingSenderId: "277291224498",
+      appId: "1:277291224498:web:1b4b1e64059618179aa8ab",
+      measurementId: "G-C65Q8F2DG1"
+    };
+
+    // Initialize Firebase if config is set
+    var db = null;
+    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+    }
+
+    // Exported function for GWT to save circuit
+    window.saveCircuitToCloud = function(circuitData) {
+      if (!db) {
+        alert("Firebase is not configured! Please add your credentials in circuitjs.html");
+        return;
+      }
+      var circuitName = prompt("Enter a name for this circuit:", "My Circuit");
+      if (!circuitName) return;
+      
+      db.collection("circuits").add({
+        name: circuitName,
+        data: circuitData,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(docRef) {
+        alert("Circuit saved successfully to Cloud with ID: " + docRef.id);
+      }).catch(function(error) {
+        alert("Error saving circuit: " + error.message);
+      });
+    };
+
+    // Exported function for GWT to load circuit
+    window.loadCircuitFromCloud = function(callback) {
+      if (!db) {
+        alert("Firebase is not configured! Please add your credentials in circuitjs.html");
+        return;
+      }
+      
+      var circuitId = prompt("Enter the Cloud Circuit ID to load:");
+      if (!circuitId) return;
+
+      db.collection("circuits").doc(circuitId).get().then(function(doc) {
+        if (doc.exists) {
+            var data = doc.data().data;
+            // Execute the GWT callback
+            callback(data);
+        } else {
+            alert("No circuit found with that ID!");
+        }
+      }).catch(function(error) {
+        alert("Error loading circuit: " + error.message);
+      });
+    };
+
+    // Exported function for GWT to save Custom IC to Cloud
+    window.saveICToCloud = function(icName, icData) {
+      if (!db) return;
+      db.collection("custom_ics").doc(icName).set({
+        name: icName,
+        data: icData,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function() {
+        console.log("Custom IC saved to Cloud: " + icName);
+      }).catch(function(error) {
+        console.error("Error saving Custom IC: " + error.message);
+      });
+    };
+
+    // Exported function for GWT to load all Custom ICs from Cloud
+    window.loadICsFromCloud = function(callback) {
+      if (!db) return;
+      db.collection("custom_ics").get().then(function(querySnapshot) {
+        var ics = [];
+        querySnapshot.forEach(function(doc) {
+            ics.push(doc.data());
+        });
+        callback(JSON.stringify(ics));
+      }).catch(function(error) {
+        console.error("Error loading Custom ICs: " + error.message);
+      });
+    };
+
+    // Phase 3: Export Canvas as PDF
+    window.exportCanvasAsPDF = function() {
+        if (typeof window.jspdf === 'undefined') {
+            alert("jsPDF library not loaded yet.");
+            return;
+        }
+        var canvas = document.querySelector('canvas');
+        if (!canvas) {
+            alert("Simulation canvas not found.");
+            return;
+        }
+        var pdf = new window.jspdf.jsPDF('landscape', 'pt', [canvas.width, canvas.height]);
+        var imgData = canvas.toDataURL('image/jpeg', 1.0);
+        pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+        pdf.save('circuit-export.pdf');
+    };
+
+    // Phase 3: Copy Shareable Link
+    window.copyCloudLinkToClipboard = function(circuitData) {
+        if (!db) {
+            alert("Firebase is not configured.");
+            return;
+        }
+        db.collection("circuits").add({
+            name: "Shared Circuit",
+            data: circuitData,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function(docRef) {
+            var url = window.location.origin + window.location.pathname + "?cloudid=" + docRef.id;
+            navigator.clipboard.writeText(url).then(function() {
+                alert("Shareable link copied to clipboard!\n\n" + url);
+            }).catch(function(err) {
+                alert("Failed to copy link. Here it is:\n" + url);
+            });
+        }).catch(function(error) {
+            alert("Error generating share link: " + error.message);
+        });
+    };
+
+    // Phase 3: Load Circuit from URL cloudid on startup
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const cloudId = urlParams.get('cloudid');
+        if (cloudId && db) {
+            db.collection("circuits").doc(cloudId).get().then(function(doc) {
+                if (doc.exists) {
+                    var data = doc.data().data;
+                    var interval = setInterval(function() {
+                        if (window.loadCircuitDataStr) {
+                            window.loadCircuitDataStr(data);
+                            clearInterval(interval);
+                        }
+                    }, 200);
+                } else {
+                    alert("No circuit found with ID: " + cloudId);
+                }
+            });
+        }
+    });
+  </script>
+
+  <script language="javascript" src="lz-string.min.js"></script>
+   
+    <!-- This script tag is what actually loads the GWT module.  The -->
+    <!-- 'nocache.js' file (also called a "selection script") is     -->
+    <!-- produced by the GWT compiler in the module output directory -->
+    <!-- or generated automatically in development mode.             -->
+    <script language="javascript" src="circuitjs1/circuitjs1.nocache.js"></script>
+    
+    <!-- Include a history iframe to enable full GWT history support -->
+    <!-- (the id must be exactly as shown)                           -->
+    <iframe src="javascript:''" id="__gwt_historyFrame" style="width:0;height:0;border:0"></iframe>
+    
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+	navigator.serviceWorker.register('service-worker.js').then(registration => {
+	  console.log('Service Worker registered with scope:', registration.scope);
+	}).catch(error => {
+	  console.error('Service Worker registration failed:', error);
+	});
+      });
+    }
+    </script>
+
+<div class="lab-tabs">
+    <button class="tab-link active" onclick="openTab('Simulator', event)">Simulator</button>
+    <button class="tab-link" onclick="openTab('Intro', event)">Introduction</button>
+    <button class="tab-link" onclick="openTab('Procedure', event)">Procedure</button>
+    <button class="tab-link" onclick="openTab('Developer', event)">Developer</button>
+    <button class="tab-link" onclick="openTab('Feedback', event)">Feedback</button>
+</div>
+
+<div id="Intro" class="tab-content">
+  <div style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h1 style="color: #0f172a; margin-bottom: 20px; font-size: 2em; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Introduction</h1>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          Welcome to the <strong>Digital Circuit Lab</strong>! This platform provides an interactive, real-time environment designed for students, educators, and hobbyists to seamlessly design, visualize, and analyze electronic circuits.
+      </p>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          Unlike traditional static circuit diagrams, this simulator brings your designs to life. You can watch the flow of current, observe voltage levels indicated by vivid colors, and view real-time waveforms on the built-in oscilloscope. 
+      </p>
+      <h3 style="color: #1e293b; margin-top: 30px; margin-bottom: 15px;">Key Features</h3>
+      <ul style="color: #475569; line-height: 1.8; font-size: 1.1em; padding-left: 20px;">
+          <li style="margin-bottom: 10px;"><strong>Real-time Simulation:</strong> Instantly see the effects of changes to your circuit components without waiting for compilation or static analysis.</li>
+          <li style="margin-bottom: 10px;"><strong>Comprehensive Component Library:</strong> Access a wide array of analog components (resistors, capacitors, inductors), digital logic gates, and specialized ICs.</li>
+          <li style="margin-bottom: 10px;"><strong>Visual Feedback:</strong> Wires dynamically change color to represent positive (green) and negative (red) voltages, while moving dots indicate current flow and direction.</li>
+          <li style="margin-bottom: 10px;"><strong>Oscilloscope Integration:</strong> Plot voltages and currents directly within the browser to analyze signals and time-varying behaviors.</li>
+      </ul>
+  </div>
+</div>
+<div id="Procedure" class="tab-content">
+  <div style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h1 style="color: #0f172a; margin-bottom: 20px; font-size: 2em; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Procedure & Guide</h1>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 30px;">
+          Follow these steps to effectively use the Digital Lab simulator to build and test your circuits.
+      </p>
+
+      <h3 style="color: #1e293b; margin-bottom: 10px;">1. Adding Components</h3>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          Use the <strong>Draw</strong> menu at the top of the screen (or simply right-click anywhere on the blank canvas) to select a component. Click and drag your mouse across the canvas to place and size the component.
+      </p>
+
+      <h3 style="color: #1e293b; margin-bottom: 10px;">2. Wiring the Circuit</h3>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          Select <strong>Add Wire</strong> (Shortcut: <code>w</code>). Click and drag from the terminal of one component to the terminal of another. Ensure the nodes properly snap together. You must always provide a <strong>Ground</strong> connection for the simulation to reference 0V.
+      </p>
+
+      <h3 style="color: #1e293b; margin-bottom: 10px;">3. Running the Simulation</h3>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          Once your circuit is wired, click the prominent green <strong>▶ RUN</strong> button at the top left. The button will turn red and read <strong>⏹ STOP</strong>, indicating the simulation is active. You will see dots moving along the wires if current is flowing.
+      </p>
+
+      <h3 style="color: #1e293b; margin-bottom: 10px;">4. Editing Values</h3>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          To change the resistance, capacitance, or voltage of an element, simply <strong>double-click</strong> the component. A dialog box will appear allowing you to input exact values.
+      </p>
+
+      <h3 style="color: #1e293b; margin-bottom: 10px;">5. Using the Oscilloscope</h3>
+      <p style="color: #475569; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px;">
+          Hover your mouse over a component, right-click, and select <strong>View in Scope</strong>. A waveform graph will appear at the bottom of the screen, tracking the voltage and current of that component in real-time.
+      </p>
+  </div>
+</div>
+<div id="Developer" class="tab-content">
+  <div style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h1 style="color: #0f172a; margin-bottom: 20px;">Developer Details</h1>
+      <p style="color: #475569; line-height: 1.6;">Details coming soon...</p>
+  </div>
+</div>
+<div id="Feedback" class="tab-content">
+  <div style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <h1 style="color: #0f172a; margin-bottom: 20px;">Feedback</h1>
+      <p style="color: #475569; line-height: 1.6;">Link coming soon...</p>
+  </div>
+</div>
+
+<style>
+.lab-tabs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #0f172a;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    height: 50px;
+}
+.tab-link {
+    background: transparent;
+    color: #94a3b8;
+    border: none;
+    padding: 0 24px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    height: 100%;
+    border-bottom: 3px solid transparent;
+}
+.tab-link:hover {
+    color: white;
+    background: #1e293b;
+}
+.tab-link.active {
+    color: white;
+    border-bottom-color: #38bdf8;
+    background: #1e293b;
+}
+.tab-content {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 50px);
+    background: #f8fafc;
+    z-index: 9999;
+    padding: 40px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+    /* Premium Selection State (No Grey Background) */
+    .toolbar-icon-button {
+        background-color: transparent !important;
+        opacity: 0.5 !important;
+        transition: all 0.2s ease !important;
+    }
+    .toolbar-icon-button:hover {
+        opacity: 0.8 !important;
+    }
+    .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
+    .toolbar-icon-button[style*="#1e293b"],
+    .toolbar-icon-button[style*="background-color"] {
+        background-color: transparent !important;
+        opacity: 1 !important;
+        transform: scale(1.15) !important;
+        filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.5)) !important;
+    }
+    
+
+    /* Allow toolbar to wrap on smaller screens */
+    .toolbar-icon-button {
+        display: inline-block !important;
+    }
+    
+    
+
+    /* Hide Zoom 100% button */
+    .toolbar-icon-button[title*="Zoom 100%"] {
+        display: none !important;
+    }
+    
+
+    /* Hide Duplicate button */
+    .toolbar-icon-button[title*="Duplicate"] {
+        display: none !important;
+    }
+    
+</style>
+<script>
+function openTab(tabName, event) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-link");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    if(tabName !== 'Simulator') {
+        document.getElementById(tabName).style.display = "block";
+    }
+    event.currentTarget.className += " active";
+}
+</script>
+
+<!-- START CUSTOM GRAPH MODAL -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+#customGraphModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    height: 450px;
+    background: var(--panel-bg, #0f172a);
+    border: 1px solid var(--border-color, #1e293b);
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    z-index: 999999;
+    padding: 20px;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+}
+#customGraphModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    color: var(--text-color, #f1f5f9);
+    border-bottom: 1px solid var(--border-color, #1e293b);
+    padding-bottom: 10px;
+}
+#customGraphModalHeader h2 { margin: 0; font-size: 18px; font-weight: 600; }
+#customGraphCloseBtn { background: transparent; border: none; color: var(--text-muted, #94a3b8); font-size: 24px; cursor: pointer; line-height: 1; }
+#customGraphCloseBtn:hover { color: #ef4444; }
+#customGraphCanvasContainer { width: 100%; height: calc(100% - 50px); }
+#btnCustomGraphToolbar { background: #38bdf8; color: #0b0f19 !important; font-weight: bold; margin-left: 10px; border: none; }
+#btnCustomGraphToolbar:hover { background: #0284c7; }
+
+    /* Premium Selection State (No Grey Background) */
+    .toolbar-icon-button {
+        background-color: transparent !important;
+        opacity: 0.5 !important;
+        transition: all 0.2s ease !important;
+    }
+    .toolbar-icon-button:hover {
+        opacity: 0.8 !important;
+    }
+    .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
+    .toolbar-icon-button[style*="#1e293b"],
+    .toolbar-icon-button[style*="background-color"] {
+        background-color: transparent !important;
+        opacity: 1 !important;
+        transform: scale(1.15) !important;
+        filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.5)) !important;
+    }
+    
+
+    /* Allow toolbar to wrap on smaller screens */
+    .toolbar-icon-button {
+        display: inline-block !important;
+    }
+    
+    
+
+    /* Hide Zoom 100% button */
+    .toolbar-icon-button[title*="Zoom 100%"] {
+        display: none !important;
+    }
+    
+
+    /* Hide Duplicate button */
+    .toolbar-icon-button[title*="Duplicate"] {
+        display: none !important;
+    }
+    
+</style>
+<div id="customGraphModal">
+    <div id="customGraphModalHeader">
+        <div style="display:flex; align-items:center;">
+            <h2>Live Oscilloscope</h2>
+            <select id="customGraphSelector" style="background:#1e293b; color:#f1f5f9; border:1px solid #334155; border-radius:4px; padding:4px 8px; margin-left:15px; font-family:'Outfit'; outline:none; font-size:14px; cursor:pointer;">
+                <option value="all">All Probes</option>
+            </select>
+        </div>
+        <button id="customGraphCloseBtn">&times;</button>
+    </div>
+    <div id="customGraphCanvasContainer">
+        <canvas id="customGraphCanvas"></canvas>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var modal = document.getElementById("customGraphModal");
+    var closeBtn = document.getElementById("customGraphCloseBtn");
+    var chartInstance = null;
+    
+    var chartLabels = [];
+    const MAX_POINTS = 1000;
+    var updateCounter = 0;
+    var probeDataMap = {};
+    var colorPalette = ['#38bdf8', '#fbbf24', '#a3e635', '#f87171', '#c084fc'];
+
+    closeBtn.onclick = function() { modal.style.display = "none"; };
+
+    // Make modal draggable
+    var header = document.getElementById("customGraphModalHeader");
+    var isDragging = false;
+    var dragOffsetX, dragOffsetY;
+    header.style.cursor = "move";
+    
+    header.addEventListener("mousedown", function(e) {
+        if (e.target === closeBtn || e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
+        isDragging = true;
+        var rect = modal.getBoundingClientRect();
+        if (modal.style.transform !== "none") {
+            modal.style.left = rect.left + "px";
+            modal.style.top = rect.top + "px";
+            modal.style.transform = "none";
+        }
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+    });
+    
+    document.addEventListener("mousemove", function(e) {
+        if (!isDragging) return;
+        modal.style.left = (e.clientX - dragOffsetX) + "px";
+        modal.style.top = (e.clientY - dragOffsetY) + "px";
+    });
+    
+    document.addEventListener("mouseup", function() {
+        isDragging = false;
+    });
+
+    function formatUnit(value, unit) {
+        if (value === 0) return '0 ' + unit;
+        var absVal = Math.abs(value);
+        if (absVal >= 1e6) return (value / 1e6).toFixed(2) + ' M' + unit;
+        if (absVal >= 1e3) return (value / 1e3).toFixed(2) + ' k' + unit;
+        if (absVal >= 1) return value.toFixed(2) + ' ' + unit;
+        if (absVal >= 1e-3) return (value * 1e3).toFixed(2) + ' m' + unit;
+        if (absVal >= 1e-6) return (value * 1e6).toFixed(2) + ' µ' + unit;
+        if (absVal >= 1e-9) return (value * 1e9).toFixed(2) + ' n' + unit;
+        return value.toExponential(2) + ' ' + unit;
+    }
+
+    function initChart() {
+        var ctx = document.getElementById("customGraphCanvas").getContext("2d");
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: chartLabels, datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: { title: { display: true, text: 'Time (s)', color: '#94a3b8' }, ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: '#1e293b' } },
+                    yV: { 
+                        type: 'linear', display: false, position: 'left', 
+                        title: { display: true, text: 'Voltage', color: '#94a3b8' }, 
+                        ticks: { color: '#94a3b8', callback: function(value) { return formatUnit(value, 'V'); } }, 
+                        grid: { color: '#1e293b' } 
+                    },
+                    yA: { 
+                        type: 'linear', display: false, position: 'right', 
+                        title: { display: true, text: 'Current', color: '#94a3b8' }, 
+                        ticks: { color: '#94a3b8', callback: function(value) { return formatUnit(value, 'A'); } }, 
+                        grid: { drawOnChartArea: false } 
+                    }
+                },
+                plugins: { legend: { display: true, labels: { color: '#f1f5f9' } }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + formatUnit(context.raw, context.dataset.yAxisID === 'yV' ? 'V' : 'A'); } } } }
+            }
+        });
+    }
+
+    var initInterval = setInterval(function() {
+        var undoIcon = document.querySelector(".cirjsicon-ccw");
+        var topBar = undoIcon ? undoIcon.parentNode : document.querySelector(".gwt-MenuBar-horizontal");
+        var sim = window.CircuitJS1;
+        
+        if (topBar && sim && typeof Chart !== 'undefined') {
+            clearInterval(initInterval);
+            
+            var btn = document.createElement("button");
+            btn.id = "btnCustomGraphToolbar";
+            btn.className = "topButton";
+            btn.innerText = "Open Graph";
+            btn.onclick = function() {
+                modal.style.display = "block";
+                if (!chartInstance) initChart();
+            };
+                        var btn = document.createElement("button");
+            btn.id = "btnCustomGraphToolbar";
+            btn.className = "topButton";
+            btn.innerText = "Open Graph";
+            btn.onclick = function() {
+                modal.style.display = "block";
+                if (!chartInstance) initChart();
+            };
+            topBar.appendChild(btn);
+            
+            // Fix Auto-Run and inject separate RUN/STOP buttons
+            setTimeout(function() {
+                if(typeof sim.setSimRunning === 'function') sim.setSimRunning(false);
+                else if(typeof sim.setStopped === 'function') sim.setStopped(true);
+                
+                // Hide native STOP/RUN button permanently
+                setInterval(function() {
+                    var allNodes = document.body.getElementsByTagName('*');
+                    for (var i = 0; i < allNodes.length; i++) {
+                        if ((allNodes[i].className || '').includes('topButton')) continue;
+                        var text = (allNodes[i].textContent || '').trim();
+                        if (/^.?(?:\s*)(?:RUN|STOP)$/i.test(text)) {
+                            if (allNodes[i].tagName !== 'BODY' && allNodes[i].tagName !== 'HTML') {
+                                allNodes[i].style.display = 'none';
+                                allNodes[i].style.opacity = '0';
+                                allNodes[i].style.pointerEvents = 'none';
+                            }
+                        }
+                    }
+                }, 500);
+                
+                
+                
+    
+                
+                
+    
+                
+                
+                
+                // Safely enable flex wrapping on the specific toolbar container
+                setInterval(function() {
+                    var firstBtn = document.querySelector('.toolbar-icon-button');
+                    if (firstBtn && firstBtn.parentNode && firstBtn.parentNode.tagName === 'DIV') {
+                        // Only apply to the immediate wrapper
+                        firstBtn.parentNode.style.flexWrap = 'wrap';
+                        firstBtn.parentNode.style.whiteSpace = 'normal';
+                        // Do NOT force height: auto on everything!
+                    }
+                }, 1000);
+    
+                
+                
+    
+                
+                
+    
+                
+                
+    
+                
+                
+                
+                
+    
+                
+                
+    
+                
+                
+    
+                
+            }, 100);
+
+            sim.onupdate = function() {
+                if (modal.style.display !== "block") return;
+                
+                updateCounter++;
+                if(updateCounter % 3 !== 0) return; 
+                
+                var time = sim.getTime();
+                var elements = sim.getElements();
+                
+                var currentProbes = [];
+                var probeIndex = 0;
+                
+                for (var i = 0; i < elements.length; i++) {
+                    var info = elements[i].getInfo();
+                    if (info && info[0]) {
+                        var name = info[0].toLowerCase();
+                        var isV = name.includes("voltmeter") || name.includes("probe");
+                        var isA = name.includes("ammeter");
+                        
+                        if (isV || isA) {
+                            var val = 0;
+                            if (isA && typeof elements[i].getCurrent === 'function') val = elements[i].getCurrent();
+                            else if (isV && typeof elements[i].getVoltageDiff === 'function') val = elements[i].getVoltageDiff();
+                            else if (isV) val = elements[i].getVoltage(0);
+                            
+                            var pId = "probe_" + probeIndex;
+                            var typeLabel = isV ? "Voltmeter" : "Ammeter";
+                            var label = typeLabel + " " + (probeIndex + 1);
+                            
+                            currentProbes.push({ id: pId, val: val, label: label, type: isV ? "V" : "A" });
+                            probeIndex++;
+                        }
+                    }
+                }
+                
+                chartLabels.push(time.toFixed(4));
+                if (chartLabels.length > MAX_POINTS) chartLabels.shift();
+                
+                currentProbes.forEach(function(p) {
+                    if (!probeDataMap[p.id]) probeDataMap[p.id] = { type: p.type, label: p.label, data: new Array(chartLabels.length - 1).fill(null) };
+                    probeDataMap[p.id].data.push(p.val);
+                    if (probeDataMap[p.id].data.length > MAX_POINTS) probeDataMap[p.id].data.shift();
+                });
+                
+                Object.keys(probeDataMap).forEach(function(pId) {
+                    var stillExists = currentProbes.some(function(cp) { return cp.id === pId; });
+                    if (!stillExists) {
+                        probeDataMap[pId].data.push(null);
+                        if (probeDataMap[pId].data.length > MAX_POINTS) probeDataMap[pId].data.shift();
+                    }
+                });
+                
+                var selector = document.getElementById("customGraphSelector");
+                if (selector && (selector.options.length - 1) !== currentProbes.length) {
+                    var selectedVal = selector.value;
+                    selector.innerHTML = '<option value="all">All Probes</option>';
+                    currentProbes.forEach(function(p) {
+                        var opt = document.createElement("option");
+                        opt.value = p.id;
+                        opt.textContent = p.label;
+                        selector.appendChild(opt);
+                    });
+                    selector.value = selectedVal || "all";
+                    if(selector.selectedIndex === -1) selector.value = "all";
+                }
+                
+                if (chartInstance) {
+                    var selected = document.getElementById("customGraphSelector").value;
+                    var activeDatasets = [];
+                    var showV = false;
+                    var showA = false;
+                    
+                    currentProbes.forEach(function(p, idx) {
+                        if (selected === "all" || selected === p.id) {
+                            if (p.type === "V") showV = true;
+                            if (p.type === "A") showA = true;
+                            
+                            var color = colorPalette[idx % colorPalette.length];
+                            activeDatasets.push({
+                                label: p.label,
+                                data: probeDataMap[p.id].data,
+                                borderColor: color,
+                                backgroundColor: color,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.1,
+                                fill: false,
+                                yAxisID: p.type === "V" ? 'yV' : 'yA'
+                            });
+                        }
+                    });
+                    
+                    chartInstance.data.datasets = activeDatasets;
+                    chartInstance.options.scales.yV.display = showV;
+                    chartInstance.options.scales.yA.display = showA;
+                    
+                    chartInstance.update();
+                }
+            };
+        }
+    }, 500);
+});
+</script>
+<!-- END CUSTOM GRAPH MODAL -->
+  </body>
+ </html>

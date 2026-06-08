@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="UTF-8">
+<script>
+// Intercept Canvas rendering to hide the '*' character drawn next to AC Voltage Sources
+(function() {
+    var originalFillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+        if (text === "*") return; // Ignore the asterisk
+        if (maxWidth !== undefined) {
+            return originalFillText.call(this, text, x, y, maxWidth);
+        } else {
+            return originalFillText.call(this, text, x, y);
+        }
+    };
+    var originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+    CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+        if (text === "*") return; // Ignore the asterisk
+        if (maxWidth !== undefined) {
+            return originalStrokeText.call(this, text, x, y, maxWidth);
+        } else {
+            return originalStrokeText.call(this, text, x, y);
+        }
+    };
+})();
+</script>
+
+  <link rel="manifest" href="/circuit/manifest.json">
+  
+    <!-- Properties can be specified to influence deferred binding -->
+    <meta name='gwt:property' content='locale=en_UK'>
+    
+    
+    <!-- Titles are optional, but useful -->
+    <title>Electric Circuits Lab Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+    /* Premium Modern Styles */
+    :root {
+        /* Default is Dark theme variables */
+        --bg-color: #0b0f19;
+        --panel-bg: #0f172a;
+        --border-color: #1e293b;
+        --border-hover: #334155;
+        --text-color: #f1f5f9;
+        --text-muted: #94a3b8;
+        --button-bg: #1e293b;
+        --button-hover: #334155;
+        --button-border: #334155;
+        --active-color: #38bdf8;
+        --active-bg: #1e293b;
+    }
+
+    body.theme-light {
+        --bg-color: #f8fafc;
+        --panel-bg: #f8fafc;
+        --border-color: #e2e8f0;
+        --border-hover: #cbd5e1;
+        --text-color: #0f172a;
+        --text-muted: #475569;
+        --button-bg: #f1f5f9;
+        --button-hover: #e2e8f0;
+        --button-border: #cbd5e1;
+        --active-color: #0284c7;
+        --active-bg: #e2e8f0;
+    }
+
+    body.theme-dark {
+        --bg-color: #0b0f19;
+        --panel-bg: #0f172a;
+        --border-color: #1e293b;
+        --border-hover: #334155;
+        --text-color: #f1f5f9;
+        --text-muted: #94a3b8;
+        --button-bg: #1e293b;
+        --button-hover: #334155;
+        --button-border: #334155;
+        --active-color: #38bdf8;
+        --active-bg: #1e293b;
+    }
+
+    body, td, th, select, input, textarea, button, .gwt-MenuItem, .gwt-Label, .gwt-Button, .topButton, .topButton-red {
+        font-family: 'Outfit', sans-serif !important;
+    }
+    
+    .gwt-Label {
+        color: var(--text-color) !important;
+    }
+    
+    body {
+        background-color: var(--bg-color) !important;
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.2s ease;
+    }
+
+    .disabled {
+        color: var(--text-muted) !important;
+    }
+    
+    .topSpace {
+        margin-top: 16px;
+    }
+    
+    .cursorPointer {
+        cursor: default;
+    }
+    
+    .cursorCross {
+        cursor: crosshair;
+    }
+
+    .cursorSplitter {
+        cursor: row-resize;
+    }
+
+    .gwt-MenuItem-disabled {
+        color: var(--text-muted) !important;
+    }
+    
+    .offScreen {
+        position: absolute;
+        right: 101%;
+        overflow: hidden;
+    }
+    
+    .gwt-Frame {
+        scrolling="no";
+        border: 0px !important;
+    }
+
+    .gwt-MenuItem {
+        font-size: 13px !important;
+        font-weight: 400;
+        padding: 6px 12px !important;
+        border-radius: 4px;
+        color: var(--text-color) !important;
+        transition: background 0.15s ease;
+    }
+    
+    .gwt-MenuItem-selected {
+        background-color: var(--active-bg) !important;
+        color: var(--active-color) !important;
+    }
+
+    .gwt-MenuBar-horizontal {
+        font-size: 13px !important;
+        background: var(--panel-bg) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 4px 8px !important;
+        color: var(--text-color) !important;
+    }
+
+    .gwt-Label-selected {
+        font-size: 1.3em;
+        font-weight: 700;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--active-color) !important;
+    }
+    
+    .gwt-Label-1off {
+        color: var(--text-muted);
+    }
+
+    .gwt-Label-2off {
+        font-size: 0.8em;
+        color: var(--text-muted);
+    }
+
+    .gwt-Button.chbut {
+        padding: 6px 12px;
+        margin: 4px;
+        border-radius: 6px;
+        border: 1px solid var(--button-border);
+        background: var(--button-bg);
+        color: var(--text-color);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .gwt-Button.chbut:hover {
+        background: var(--button-hover);
+        border-color: var(--border-hover);
+    }
+
+    .gwt-Button.chbut.chsel {
+        font-weight: 700;
+        background: var(--active-color);
+        color: var(--bg-color);
+        border-color: var(--active-color);
+    }
+
+    .gwt-Button.chbut-black {
+        background: var(--panel-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .gwt-Button.chbut-white {
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+    }
+
+    .gwt-TextBox.scalebox {
+        width: 100px;
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: 1px solid var(--button-border);
+        border-radius: 4px;
+        padding: 4px;
+    }
+
+    .gwt-Button.expand-but {
+        line-height: 0;
+        font-size: 13px;
+        margin-right: 5px;
+        border-radius: 4px;
+        display: inline-block;
+        text-align: center;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        margin-bottom: 1px;
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: none;
+        cursor: pointer;
+    }
+
+    .topButton-red {
+        margin: 2px 4px;
+        padding: 6px 12px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff !important;
+        background-color: #ef4444; 
+        border: 1px solid #dc2626;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .topButton-red:hover {
+        background-color: #dc2626;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+
+    .topButton {
+        margin: 2px 2px;
+        padding: 4px 6px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-color) !important;
+        background-color: var(--button-bg); 
+        border: 1px solid var(--button-border);
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .topButton:hover {
+        background-color: var(--button-hover);
+        border-color: var(--border-hover);
+    }
+
+    /* compact variant for side-pane buttons */
+    .topButton.compact,
+    .topButton-red.compact {
+        font-size: 11px;
+        padding: 4px 8px;
+        margin: 2px 3px;
+    }
+
+    .radioPanel label {
+        margin-right: 15px;
+        color: var(--text-muted);
+    }
+    
+    /* Modern Glassmorphic Toolbar wrapper */
+    .modern-toolbar {
+        background: var(--panel-bg) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 4px 8px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        transition: all 0.2s ease;
+    }
+    
+    .toolbar-icon-button {
+        color: var(--text-muted) !important;
+        padding: 2px 3px !important;
+        margin-right: 2px !important;
+        border-radius: 4px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .toolbar-icon-button:hover {
+        color: var(--active-color) !important;
+        background-color: var(--active-bg) !important;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: var(--bg-color);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: var(--button-bg);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--button-hover);
+    }
+
+    /* GWT vertical dropdown menu bars */
+    .gwt-MenuBar-vertical {
+        font-size: 13px !important;
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 6px !important;
+        color: var(--text-color) !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 8px !important;
+    }
+    
+    .gwt-MenuBar-vertical .gwt-MenuItem {
+        margin: 2px 0 !important;
+    }
+
+    /* GWT general popup panels */
+    .gwt-PopupPanel {
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 8px !important;
+        padding: 4px !important;
+    }
+
+    /* GWT DialogBox styling */
+    .gwt-DialogBox {
+        background: var(--panel-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
+        border-radius: 12px !important;
+        font-family: 'Outfit', sans-serif !important;
+        color: var(--text-color) !important;
+        overflow: hidden;
+    }
+    
+    .gwt-DialogBox table, 
+    .gwt-DialogBox td {
+        background: var(--panel-bg) !important;
+    }
+    
+    .gwt-DialogBox .gwt-Label {
+        color: var(--text-color) !important;
+    }
+
+    .gwt-DialogBox .Caption {
+        background: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        font-weight: 600 !important;
+        padding: 10px 16px !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        cursor: move;
+    }
+
+    /* Dialog box inner widgets */
+    .gwt-DialogBox .gwt-TextBox, 
+    .gwt-DialogBox .gwt-TextArea,
+    .gwt-TextBox, 
+    .gwt-TextArea {
+        background-color: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--button-border) !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .gwt-DialogBox .gwt-TextBox:focus, 
+    .gwt-DialogBox .gwt-TextArea:focus,
+    .gwt-TextBox:focus, 
+    .gwt-TextArea:focus {
+        outline: none !important;
+        border-color: var(--active-color) !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+    }
+
+    /* We don't hide the buttons here anymore, JS handles canvas swapping */
+    .gwt-MenuBar-horizontal {
+        padding-left: 65px !important;
+    }
+
+    .gwt-DialogBox .gwt-Button:hover,
+    .gwt-Button:hover {
+        background: var(--button-hover) !important;
+        border-color: var(--border-hover) !important;
+        color: var(--text-color) !important;
+    }
+
+
+
+    .gwt-DialogBox .gwt-ListBox,
+    .gwt-ListBox {
+        background-color: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--button-border) !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font-size: 13px !important;
+        outline: none !important;
+    }
+
+    .gwt-DialogBox .gwt-Button,
+    .gwt-Button {
+        padding: 6px 16px !important;
+        border-radius: 6px !important;
+        border: 1px solid var(--button-border) !important;
+        background: var(--button-bg) !important;
+        color: var(--text-color) !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .gwt-DialogBox .gwt-Button:hover,
+    .gwt-Button:hover {
+        background: var(--button-hover) !important;
+    }
+    
+    
+    
+    
+    
+    /* Absolute Foolproof CSS Base64 SVG Replacement - TARGETING INLINE SVG */
+    .toolbar-icon-button[title*="Wire"] svg,
+    .toolbar-icon-button[title*="Resistor"] svg,
+    .toolbar-icon-button[title*="Capacitor"] svg,
+    .toolbar-icon-button[title*="Inductor"] svg,
+    .toolbar-icon-button[title*="Ground"] svg,
+    .toolbar-icon-button[title*="Diode"] svg,
+    .toolbar-icon-button[title*="Current Source"] svg,
+    .toolbar-icon-button[title*="Potentiometer"] svg,
+    .toolbar-icon-button[title*="Transformer"] svg,
+    .toolbar-icon-button[title*="Fuse"] svg,
+    .toolbar-icon-button[title*="LED"] svg,
+    .toolbar-icon-button[title*="Lamp"] svg,
+    .toolbar-icon-button[title*="Text"] svg,
+    .toolbar-icon-button[title*="Voltmeter/Scope"] svg,
+    .toolbar-icon-button[title*="Ohmmeter"] svg,
+    .toolbar-icon-button[title*="Ammeter"] svg,
+    .toolbar-icon-button[title*="Wattmeter"] svg,
+    .toolbar-icon-button[title*="DC Motor"] svg,
+    .toolbar-icon-button[title*="3-Phase Motor"] svg,
+    .toolbar-icon-button[title*="Voltage Source (2-terminal)"] svg,
+    .toolbar-icon-button[title*="Voltage Source (1-terminal)"] svg,
+    .toolbar-icon-button[title*="Switch"] svg,
+    .toolbar-icon-button[title*="Op Amp"] svg {
+        opacity: 0 !important;
+    }
+
+    .toolbar-icon-button[title*="Wire"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMmgyMCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Resistor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVqb2luPSJiZXZlbCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoNCBsMiAtNSBsNCAxMCBsNCAtMTAgbDQgMTAgbDIgLTUgaDIiIC8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Capacitor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDN2NyBtLTYgMGgxMiBtLTEyIDRoMTIgbS02IDB2NyIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Inductor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoMyBjMCAtMy41IDQgLTMuNSA0IDAgYzAgLTMuNSA0IC0zLjUgNCAwIGMwIC0zLjUgNCAtMy41IDQgMCBoNSIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ground"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDUgdjcgTTcgMTIgaDEwIE05IDE2IGg2IE0xMSAyMCBoMiIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Diode"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTIgMTIgaDYgbTAgLTUgdjEwIGw4IC01IGwtOCAtNSBtOCAwIHYxMCBtMCAtNSBoNiIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Current Source"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMiAxNyB2LTEwIG0tMyAzIGwzIC0zIGwzIDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Potentiometer"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxNiBoMyBsMiAtNSBsNCAxMCBsNCAtMTAgbDQgMTAgbDIgLTUgaDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIxLjgiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lam9pbj0iYmV2ZWwiLz48cGF0aCBkPSJNMTIgMiB2OSBtLTMgLTMgbDMgMyBsMyAtMyIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Transformer"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNyA0IGMtMy41IDAgLTMuNSA0IDAgNCBjLTMuNSAwIC0zLjUgNCAwIDQgYy0zLjUgMCAtMy41IDQgMCA0IGMtMy41IDAgLTMuNSA0IDAgNCBNMTcgNCBjMy41IDAgMy41IDQgMCA0IGMzLjUgMCAzLjUgNCAwIDQgYzMuNSAwIDMuNSA0IDAgNCBjMy41IDAgMy41IDQgMCA0IE0xMSA0djE2IE0xMyA0djE2IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Fuse"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSI2IiB5PSI5IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMiAxMiBoMjAiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="LED"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyAxNGg1IG0wIC01djEwIGw3IC01IGwtNyAtNSBtNyAwdjEwIG0wIC01aDUgTTE0IDcgbDMgLTMgbTAgMCB2MyBtMCAtMyBoLTMgTTE4IDkgbDMgLTMgbTAgMCB2MyBtMCAtMyBoLTMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIxLjgiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Lamp"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIE04IDggbDggOCBNOCAxNiBsOCAtOCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Text"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA2IGgxNCBNMTIgNiB2MTQiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyLjUiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltmeter/Scope"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlY8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ohmmeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPs6pPC90ZXh0Pjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ammeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkE8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Wattmeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlc8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="DC Motor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk08L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="3-Phase Motor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjNDc1NTY5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4zfjwvdGV4dD48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltage Source (2-terminal)"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoOCBNMTQgMTIgaDggTTEwIDYgdjEyIE0xNCA4IHY4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltage Source (1-terminal)"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjAgdi0xMiBsLTMgMyBtMyAtMyBsMyAzIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSI3IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+K1Y8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Switch"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoNCBNMTggMTIgaDQgTTYgMTIgbDEwIC00IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjYiIGN5PSIxMiIgcj0iMS41IiBmaWxsPSIjNDc1NTY5Ii8+PGNpcmNsZSBjeD0iMTciIGN5PSIxMiIgcj0iMS41IiBmaWxsPSIjNDc1NTY5Ii8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Op Amp"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA0IGwxMiA4IGwtMTIgOCB6IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xIDggaDQgbS00IDggaDQgbTEyIC00IGg1IE03IDggaDIgTTcgMTYgaDIgTTggMTUgdjIiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    
+    /* Allow toolbar to wrap on smaller screens */
+    .toolbar-icon-button {
+        display: inline-block !important;
+    }
+    
+    
+
+    /* Hide Zoom 100% button */
+    .toolbar-icon-button[title*="Zoom 100%"] {
+        display: none !important;
+    }
+    
+
+    /* Hide Duplicate button */
+    .toolbar-icon-button[title*="Duplicate"] {
+        display: none !important;
+    }
+    
+</style>
+
+<link rel="stylesheet" href="font/fontello.css">
+
+
+    
+    <!-- ZERO FLICKER ULTIMATE FIX V2 -->
+    <style>
+        .hidden-by-me { 
+            display: none !important; 
+            opacity: 0 !important; 
+            visibility: hidden !important; 
+            width: 0 !important; 
+            height: 0 !important; 
+            pointer-events: none !important; 
+        }
+    </style>
+    <script>
+    (function() {
+        var observer = new MutationObserver(function(mutations) {
+            
+            // 1. Eradicate duplicate IDs to prevent clone bugs
+            var runs = document.querySelectorAll('#btnCustomRun');
+            for(var i=1; i<runs.length; i++) runs[i].remove();
+            
+            var stops = document.querySelectorAll('#btnCustomStop');
+            for(var i=1; i<stops.length; i++) stops[i].remove();
+            
+            var graphs = document.querySelectorAll('#btnCustomGraphToolbar');
+            for(var i=1; i<graphs.length; i++) graphs[i].remove();
+
+            // 2. Hide native buttons safely and PERMANENTLY using a CSS class
+            var btns = document.querySelectorAll('button, .topButton, .gwt-Button');
+            for(var i=0; i<btns.length; i++) {
+                if (btns[i].id === 'btnCustomRun' || btns[i].id === 'btnCustomStop') continue;
+                var t = (btns[i].innerText || '').trim();
+                
+                // If it's a native button we don't want, tag it with our bulletproof class
+                if(t === 'Reset' || t === 'Scope' || t === 'Run/STOP' || t === 'RUN' || t === 'STOP' || t.includes('STOP')) {
+                    btns[i].classList.add('hidden-by-me');
+                }
+            }
+            
+            // 3. Hide Mode labels
+            var labels = document.querySelectorAll('.gwt-Label');
+            for(var i=0; i<labels.length; i++) {
+                if ((labels[i].innerText || '').includes('Mode:')) labels[i].classList.add('hidden-by-me');
+            }
+            
+            // 4. Hide My ICs
+            var allEls = document.querySelectorAll('div, span, h1, h2, h3');
+            for(var i=0; i<allEls.length; i++) {
+                if((allEls[i].innerText || '').trim() === 'My ICs') {
+                    allEls[i].classList.add('hidden-by-me');
+                }
+            }
+            
+            
+            
+            // 5. Build our toolbar
+            if (document.body && !document.getElementById('myUltimateToolbar')) {
+                var tb = document.createElement('div');
+                tb.id = 'myUltimateToolbar';
+                tb.style.position = 'absolute';
+                tb.style.right = '10px';
+                tb.style.top = '10px';
+                tb.style.zIndex = '999999';
+                tb.style.display = 'flex';
+                tb.style.gap = '8px';
+                tb.style.alignItems = 'center';
+                
+                var gBtn = document.getElementById('btnCustomGraphToolbar');
+                if (gBtn) {
+                    tb.appendChild(gBtn);
+                    gBtn.style.display = 'inline-block';
+                }
+                
+                var rBtn = document.createElement("button");
+                rBtn.id = "btnCustomRun";
+                rBtn.className = "topButton";
+                rBtn.innerHTML = "&#9658; RUN";
+                rBtn.style.background = "#22c55e";
+                rBtn.style.color = "#fff";
+                rBtn.style.fontWeight = "bold";
+                rBtn.style.border = "none";
+                rBtn.onclick = function() { 
+                    var sim = window.CircuitJS1; if(sim) {
+                        if(typeof sim.setSimRunning === 'function') sim.setSimRunning(true);
+                        else if(typeof sim.setStopped === 'function') sim.setStopped(false);
+                    }
+                };
+                tb.appendChild(rBtn);
+                
+                var sBtn = document.createElement("button");
+                sBtn.id = "btnCustomStop";
+                sBtn.className = "topButton";
+                sBtn.innerHTML = "&#9632; STOP";
+                sBtn.style.background = "#ef4444";
+                sBtn.style.color = "#fff";
+                sBtn.style.fontWeight = "bold";
+                sBtn.style.border = "none";
+                sBtn.onclick = function() { 
+                    var sim = window.CircuitJS1; if(sim) {
+                        if(typeof sim.setSimRunning === 'function') sim.setSimRunning(false);
+                        else if(typeof sim.setStopped === 'function') sim.setStopped(true);
+                    }
+                };
+                tb.appendChild(sBtn);
+                
+                document.body.appendChild(tb);
+            }
+        });
+        
+        observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    })();
+    </script>
+    
+    
+
+    <style>
+        /* Permanently hide all dynamic 404 error iframes spawned by the simulator */
+        iframe:not(#__gwt_historyFrame) {
+            display: none !important;
+        }
+    </style>
+    
+
+    
+</head>
+  <body class="theme-dark">
+  <!-- Include the next line to allow support for dropbox import/export. You will need your own app key. -->
+  <!--<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="YOUR_KEY"></script>-->
+
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAwoELkKP2IIv18E8isKOAhnYh6-ng0nBE",
+      authDomain: "circuit-simulator-cloud.firebaseapp.com",
+      projectId: "circuit-simulator-cloud",
+      storageBucket: "circuit-simulator-cloud.firebasestorage.app",
+      messagingSenderId: "277291224498",
+      appId: "1:277291224498:web:1b4b1e64059618179aa8ab",
+      measurementId: "G-C65Q8F2DG1"
+    };
+
+    // Initialize Firebase if config is set
+    var db = null;
+    try {
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined') {
+          firebase.initializeApp(firebaseConfig);
+          db = firebase.firestore();
+        }
+    } catch(e) {
+        console.error("Firebase initialization failed (possibly blocked by an adblocker):", e);
+    }
+
+    // Exported function for GWT to save circuit
+    window.saveCircuitToCloud = function(circuitData) {
+      if (!db) {
+        alert("Firebase is not configured! Please add your credentials in circuitjs.html");
+        return;
+      }
+      var circuitName = prompt("Enter a name for this circuit:", "My Circuit");
+      if (!circuitName) return;
+      
+      db.collection("circuits").add({
+        name: circuitName,
+        data: circuitData,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(docRef) {
+        alert("Circuit saved successfully to Cloud with ID: " + docRef.id);
+      }).catch(function(error) {
+        alert("Error saving circuit: " + error.message);
+      });
+    };
+
+    // Exported function for GWT to load circuit
+    window.loadCircuitFromCloud = function(callback) {
+      if (!db) {
+        alert("Firebase is not configured! Please add your credentials in circuitjs.html");
+        return;
+      }
+      
+      var circuitId = prompt("Enter the Cloud Circuit ID to load:");
+      if (!circuitId) return;
+
+      db.collection("circuits").doc(circuitId).get().then(function(doc) {
+        if (doc.exists) {
+            var data = doc.data().data;
+            // Execute the GWT callback
+            callback(data);
+        } else {
+            alert("No circuit found with that ID!");
+        }
+      }).catch(function(error) {
+        alert("Error loading circuit: " + error.message);
+      });
+    };
+
+    // Exported function for GWT to save Custom IC to Cloud
+    window.saveICToCloud = function(icName, icData) {
+      if (!db) return;
+      db.collection("custom_ics").doc(icName).set({
+        name: icName,
+        data: icData,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function() {
+        console.log("Custom IC saved to Cloud: " + icName);
+      }).catch(function(error) {
+        console.error("Error saving Custom IC: " + error.message);
+      });
+    };
+
+    // Exported function for GWT to load all Custom ICs from Cloud
+    window.loadICsFromCloud = function(callback) {
+      if (!db) return;
+      db.collection("custom_ics").get().then(function(querySnapshot) {
+        var ics = [];
+        querySnapshot.forEach(function(doc) {
+            ics.push(doc.data());
+        });
+        callback(JSON.stringify(ics));
+      }).catch(function(error) {
+        console.error("Error loading Custom ICs: " + error.message);
+      });
+    };
+
+    // Phase 3: Export Canvas as PDF
+    window.exportCanvasAsPDF = function() {
+        if (typeof window.jspdf === 'undefined') {
+            alert("jsPDF library not loaded yet.");
+            return;
+        }
+        var canvas = document.querySelector('canvas');
+        if (!canvas) {
+            alert("Simulation canvas not found.");
+            return;
+        }
+        var pdf = new window.jspdf.jsPDF('landscape', 'pt', [canvas.width, canvas.height]);
+        var imgData = canvas.toDataURL('image/jpeg', 1.0);
+        pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+        pdf.save('circuit-export.pdf');
+    };
+
+    // Phase 3: Copy Shareable Link
+    window.copyCloudLinkToClipboard = function(circuitData) {
+        if (!db) {
+            alert("Firebase is not configured.");
+            return;
+        }
+        db.collection("circuits").add({
+            name: "Shared Circuit",
+            data: circuitData,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function(docRef) {
+            var url = window.location.origin + window.location.pathname + "?cloudid=" + docRef.id;
+            navigator.clipboard.writeText(url).then(function() {
+                alert("Shareable link copied to clipboard!\n\n" + url);
+            }).catch(function(err) {
+                alert("Failed to copy link. Here it is:\n" + url);
+            });
+        }).catch(function(error) {
+            alert("Error generating share link: " + error.message);
+        });
+    };
+
+    // Phase 3: Load Circuit from URL cloudid on startup
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const cloudId = urlParams.get('cloudid');
+        if (cloudId && db) {
+            db.collection("circuits").doc(cloudId).get().then(function(doc) {
+                if (doc.exists) {
+                    var data = doc.data().data;
+                    var interval = setInterval(function() {
+                        if (window.loadCircuitDataStr) {
+                            window.loadCircuitDataStr(data);
+                            clearInterval(interval);
+                        }
+                    }, 200);
+                } else {
+                    alert("No circuit found with ID: " + cloudId);
+                }
+            });
+        }
+    });
+  </script>
+
+  <script language="javascript" src="lz-string.min.js"></script>
+   
+    <!-- This script tag is what actually loads the GWT module.  The -->
+    <!-- 'nocache.js' file (also called a "selection script") is     -->
+    <!-- produced by the GWT compiler in the module output directory -->
+    <!-- or generated automatically in development mode.             -->
+    <script language="javascript" src="circuitjs1/circuitjs1.nocache.js"></script>
+    
+    <!-- Include a history iframe to enable full GWT history support -->
+    <!-- (the id must be exactly as shown)                           -->
+    <iframe src="javascript:''" id="__gwt_historyFrame" style="width:0;height:0;border:0"></iframe>
+    
+    <script>
+    // Forcefully wipe all service workers and caches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+        caches.keys().then(function(names) {
+            for (let name of names) caches.delete(name);
+        });
+    }
+    </script>
+
+<div class="lab-tabs">
+    <div class="lab-logo">⚡ Electric Circuits Lab</div>
+    <button class="tab-link active" onclick="openTab('Simulator', event)">Simulator</button>
+    <button class="tab-link" onclick="openTab('Intro', event)">Introduction</button>
+    <button class="tab-link" onclick="openTab('Procedure', event)">Procedure</button>
+    <button class="tab-link" onclick="openTab('Developer', event)">Developer</button>
+    <button class="tab-link" onclick="openTab('Feedback', event)">Feedback</button>
+</div>
+
+<div id="Intro" class="tab-content">
+  <style>
+    .intro-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .intro-hero {
+      text-align: center;
+      margin-bottom: 60px;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .intro-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url('data:image/svg+xml;utf8,<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
+      pointer-events: none;
+    }
+    
+    .intro-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+      background: linear-gradient(to right, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .intro-subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 20px;
+      padding: 30px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(96, 165, 250, 0.4);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      display: inline-block;
+      padding: 15px;
+      background: rgba(241, 245, 249, 0.8);
+      border-radius: 16px;
+      color: #3b82f6;
+    }
+
+    .feature-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 15px;
+    }
+
+    .feature-desc {
+      color: #64748b;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    .quick-start {
+      background: white;
+      border-radius: 24px;
+      padding: 50px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .quick-start-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .steps-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 250px;
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 50px;
+      height: 50px;
+      background: #eff6ff;
+      color: #3b82f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 0 8px white, 0 0 0 10px #eff6ff;
+    }
+
+    .step-title {
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+    
+    .step-desc {
+      color: #64748b;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+  </style>
+
+  <div class="intro-container">
+    <div class="intro-hero">
+      <h1 class="intro-title">Next-Gen Electric Circuits Lab Lab Simulator</h1>
+      <p class="intro-subtitle">A real-time, interactive simulation environment built specifically for EEE, ECE, and CSE students to design, visualize, and master complex electronic circuits.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Real-Time Simulation</h3>
+        <p class="feature-desc">Watch current flow and voltages update instantly as you tweak components. No waiting for compilation or static analysis.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3 class="feature-title">Live Oscilloscope</h3>
+        <p class="feature-desc">Monitor multiple probes simultaneously with intelligent auto-scaling engineering units (mA, µV, kV) for perfect precision.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🛠️</div>
+        <h3 class="feature-title">Extensive Library</h3>
+        <p class="feature-desc">Access everything from basic resistors and capacitors to advanced digital logic gates, multiplexers, and specialized ICs.</p>
+      </div>
+    </div>
+
+    <div class="quick-start">
+      <h2 class="quick-start-title">Quick Start Guide</h2>
+      <div class="steps-container">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h4 class="step-title">Select Components</h4>
+          <p class="step-desc">Pick components from the top toolbar or right-click the canvas for the full library.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h4 class="step-title">Wire It Up</h4>
+          <p class="step-desc">Use the wire tool (shortcut: 'w') to connect nodes and build your circuit paths.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h4 class="step-title">Analyze Results</h4>
+          <p class="step-desc">Hover over components to see real-time data, or use the custom graph for live waveforms.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="Procedure" class="tab-content">
+  <style>
+    .proc-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .proc-hero {
+      text-align: center;
+      margin-bottom: 60px;
+      padding: 50px 40px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .proc-title {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 15px;
+      letter-spacing: -1px;
+      background: linear-gradient(to right, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .proc-subtitle {
+      font-size: 1.15rem;
+      color: #94a3b8;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    .proc-timeline {
+      position: relative;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Vertical line */
+    .proc-timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 40px;
+      width: 4px;
+      background: #e2e8f0;
+      border-radius: 2px;
+    }
+
+    .proc-step {
+      position: relative;
+      margin-bottom: 50px;
+      padding-left: 100px;
+    }
+
+    .proc-step:last-child {
+      margin-bottom: 0;
+    }
+
+    .proc-icon-wrap {
+      position: absolute;
+      left: 11px;
+      top: 0;
+      width: 62px;
+      height: 62px;
+      background: #fff;
+      border: 4px solid #e2e8f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+
+    .proc-step:hover .proc-icon-wrap {
+      border-color: #3b82f6;
+      transform: scale(1.1);
+      box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+    }
+
+    .proc-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .proc-step:hover .proc-card {
+      transform: translateX(10px);
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .proc-step-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .proc-step-desc {
+      color: #475569;
+      line-height: 1.7;
+      font-size: 1.05rem;
+    }
+
+    .proc-kbd {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #0f172a;
+      font-weight: bold;
+      box-shadow: 0 2px 0 #cbd5e1;
+    }
+  </style>
+
+  <div class="proc-container">
+    <div class="proc-hero">
+      <h1 class="proc-title">Operating Procedure</h1>
+      <p class="proc-subtitle">Master the Electric Circuits Lab in five simple steps. Follow this visual guide to effortlessly build, simulate, and analyze your electronic circuits.</p>
+    </div>
+
+    <div class="proc-timeline">
+      
+      <!-- Step 1 -->
+      <div class="proc-step">
+        <div class="proc-icon-wrap">🖱️</div>
+        <div class="proc-card">
+          <h3 class="proc-step-title">1. Adding Components</h3>
+          <p class="proc-step-desc">
+            Use the <strong>Draw</strong> menu at the top of the screen (or simply right-click anywhere on the blank canvas) to select a component. Click and drag your mouse across the canvas to place and size the component perfectly.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="proc-step">
+        <div class="proc-icon-wrap">🔌</div>
+        <div class="proc-card">
+          <h3 class="proc-step-title">2. Wiring the Circuit</h3>
+          <p class="proc-step-desc">
+            Select <strong>Add Wire</strong> (Shortcut: <span class="proc-kbd">w</span>). Click and drag from the terminal of one component to the terminal of another to connect them. Always ensure you provide a <strong>Ground</strong> connection for the simulation to reference 0V!
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="proc-step">
+        <div class="proc-icon-wrap">▶️</div>
+        <div class="proc-card">
+          <h3 class="proc-step-title">3. Running the Simulation</h3>
+          <p class="proc-step-desc">
+            Once your circuit is completely wired, click the prominent green <strong>▶ RUN</strong> button at the top left. Watch the simulation come to life as animated dots move along the wires to indicate current flow and direction.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="proc-step">
+        <div class="proc-icon-wrap">⚙️</div>
+        <div class="proc-card">
+          <h3 class="proc-step-title">4. Editing Values</h3>
+          <p class="proc-step-desc">
+            Need to change resistance, capacitance, or voltage? Simply <strong>double-click</strong> any placed component. A quick dialog box will appear allowing you to input exact parameters and engineering units instantly.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="proc-step">
+        <div class="proc-icon-wrap">📊</div>
+        <div class="proc-card">
+          <h3 class="proc-step-title">5. Using the Oscilloscope</h3>
+          <p class="proc-step-desc">
+            Hover your mouse over any active component, right-click, and select <strong>View in Scope</strong>. A beautiful live waveform graph will appear at the bottom of the screen, tracking the real-time voltage and current of that specific component.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="Developer" class="tab-content">
+  <style>
+    .dev-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .dev-hero {
+      text-align: center;
+      margin-bottom: 60px;
+      padding: 50px 40px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .dev-title {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 15px;
+      letter-spacing: -1px;
+      background: linear-gradient(to right, #34d399, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .dev-subtitle {
+      font-size: 1.15rem;
+      color: #94a3b8;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dev-section-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e2e8f0;
+      text-align: center;
+    }
+
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+
+    .dev-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .dev-card:hover {
+      transform: translateY(-8px);
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .dev-avatar {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #e0e7ff, #dbeafe);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #3b82f6;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+    }
+
+    .dev-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    .dev-role {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #3b82f6;
+      margin-bottom: 12px;
+      background: #eff6ff;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .dev-dept {
+      color: #475569;
+      font-size: 0.95rem;
+      margin-bottom: 5px;
+    }
+    
+    .dev-uni {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-bottom: 15px;
+    }
+
+    .dev-contact {
+      margin-top: auto;
+      display: inline-block;
+      color: #0f172a;
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .dev-card:hover .dev-contact {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+  
+    .dev-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+  </style>
+
+  <div class="dev-container">
+    <div class="dev-hero">
+      <h1 class="dev-title">Meet the Team</h1>
+      <p class="dev-subtitle">The brilliant minds from SRMIST, Kattankulathur who brought the Electric Circuits Lab to life.</p>
+    </div>
+
+    <!-- Faculty Section -->
+    <h2 class="dev-section-title">Faculty Advisors</h2>
+    <div class="dev-grid">
+      
+      <div class="dev-card">
+        <div class="dev-avatar"><img src="dev_images/image1.png" alt="Dr. S. Usha"></div>
+        <h3 class="dev-name">Dr. S. Usha</h3>
+        <div class="dev-role">Associate Professor</div>
+        <div class="dev-dept">Department of EEE</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:ushas@srmist.edu.in" class="dev-contact">📧 ushas@srmist.edu.in</a>
+      </div>
+
+      <div class="dev-card">
+        <div class="dev-avatar"><img src="dev_images/image2.png" alt="Dr. A. Geetha"></div>
+        <h3 class="dev-name">Dr. A. Geetha</h3>
+        <div class="dev-role">Associate Professor</div>
+        <div class="dev-dept">Department of EEE</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:geetha2@srmist.edu.in" class="dev-contact">📧 geetha2@srmist.edu.in</a>
+      </div>
+
+      <div class="dev-card">
+        <div class="dev-avatar"><img src="dev_images/image3.png" alt="Dr. Uma Maheswari KM"></div>
+        <h3 class="dev-name">Dr. Uma Maheswari KM</h3>
+        <div class="dev-role">Associate Professor</div>
+        <div class="dev-dept">Department of CSE</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:umamahek@srmist.edu.in" class="dev-contact">📧 umamahek@srmist.edu.in</a>
+      </div>
+
+    </div>
+
+    <!-- Student Section -->
+    <h2 class="dev-section-title" style="margin-top: 40px;">Student Developers</h2>
+    <div class="dev-grid">
+      
+      <div class="dev-card">
+        <div class="dev-avatar">👨‍💻</div>
+        <h3 class="dev-name">Siddharth Kumar</h3>
+        <div class="dev-role">Developer</div>
+        <div class="dev-dept">Electrical & Electronics Engineering</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:Sk6751@srmist.edu.in" class="dev-contact">📧 Sk6751@srmist.edu.in</a>
+      </div>
+
+      <div class="dev-card">
+        <div class="dev-avatar">👨‍💻</div>
+        <h3 class="dev-name">Harshit Harlalka</h3>
+        <div class="dev-role">Developer</div>
+        <div class="dev-dept">Computer Science & Engineering</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:hh2044@srmist.edu.in" class="dev-contact">📧 hh2044@srmist.edu.in</a>
+      </div>
+
+      <div class="dev-card">
+        <div class="dev-avatar">👨‍💻</div>
+        <h3 class="dev-name">Venkata Rao Dechiraju</h3>
+        <div class="dev-role">Developer</div>
+        <div class="dev-dept">Computer Science & Engineering</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:vd9239@srmist.edu.in" class="dev-contact">📧 vd9239@srmist.edu.in</a>
+      </div>
+
+      <div class="dev-card">
+        <div class="dev-avatar">👩‍💻</div>
+        <h3 class="dev-name">Shivangi Tripathi</h3>
+        <div class="dev-role">Developer</div>
+        <div class="dev-dept">Computer Science & Engineering</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:st9311@srmist.edu.in" class="dev-contact">📧 st9311@srmist.edu.in</a>
+      </div>
+
+      <div class="dev-card">
+        <div class="dev-avatar">👨‍💻</div>
+        <h3 class="dev-name">Abhiraj Deshmukh</h3>
+        <div class="dev-role">Developer</div>
+        <div class="dev-dept">Computer Science & Engineering</div>
+        <div class="dev-uni">SRMIST, Kattankulathur</div>
+        <a href="mailto:ad8973@srmist.edu.in" class="dev-contact">📧 ad8973@srmist.edu.in</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div id="Feedback" class="tab-content">
+  <style>
+    .fb-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 20px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      text-align: center;
+    }
+    
+    .fb-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 30px;
+      padding: 60px 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fb-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(to right, #ec4899, #8b5cf6, #3b82f6);
+    }
+
+    .fb-icon {
+      font-size: 4.5rem;
+      margin-bottom: 20px;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .fb-title {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+    
+    .fb-subtitle {
+      font-size: 1.2rem;
+      color: #475569;
+      max-width: 600px;
+      margin: 0 auto 40px auto;
+      line-height: 1.6;
+    }
+
+    .fb-btn-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .fb-btn-glow {
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      background: linear-gradient(45deg, #ec4899, #8b5cf6, #3b82f6, #ec4899);
+      border-radius: 50px;
+      z-index: 0;
+      filter: blur(15px);
+      opacity: 0.7;
+      animation: glowing 20s linear infinite;
+    }
+
+    @keyframes glowing {
+      0% { background-position: 0 0; }
+      50% { background-position: 400% 0; }
+      100% { background-position: 0 0; }
+    }
+
+    .fb-btn {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 40px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: white;
+      background: #0f172a;
+      border: none;
+      border-radius: 50px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+    }
+
+    .fb-btn:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 15px 25px rgba(15, 23, 42, 0.3);
+      color: white;
+    }
+
+    .fb-btn:active {
+      transform: translateY(1px);
+    }
+
+  </style>
+
+  <div class="fb-container">
+    <div class="fb-card">
+      <div class="fb-icon">💬</div>
+      <h1 class="fb-title">We Value Your Feedback</h1>
+      <p class="fb-subtitle">
+        Your input helps us improve the Electric Circuits Lab for all engineering students. 
+        Please take a moment to share your experience, report bugs, or suggest new features!
+      </p>
+
+      <div class="fb-btn-container">
+        <div class="fb-btn-glow"></div>
+        <a href="https://forms.gle/DqWuKrQqG1DswjTr8" target="_blank" class="fb-btn">
+          <span>Take the Survey</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+
+.lab-logo {
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-right: auto;
+    padding-left: 20px;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+    .lab-logo {
+        display: none; /* Hide on small screens to save space */
+    }
+}
+
+.lab-tabs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #0f172a;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    height: 50px;
+}
+.tab-link {
+    background: transparent;
+    color: #94a3b8;
+    border: none;
+    padding: 0 24px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    height: 100%;
+    border-bottom: 3px solid transparent;
+}
+.tab-link:hover {
+    color: white;
+    background: #1e293b;
+}
+.tab-link.active {
+    color: white;
+    border-bottom-color: #38bdf8;
+    background: #1e293b;
+}
+.tab-content {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 50px);
+    background: #f8fafc;
+    z-index: 9999;
+    padding: 40px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+    
+    
+    
+    
+    /* Absolute Foolproof CSS Base64 SVG Replacement - TARGETING INLINE SVG */
+    .toolbar-icon-button[title*="Wire"] svg,
+    .toolbar-icon-button[title*="Resistor"] svg,
+    .toolbar-icon-button[title*="Capacitor"] svg,
+    .toolbar-icon-button[title*="Inductor"] svg,
+    .toolbar-icon-button[title*="Ground"] svg,
+    .toolbar-icon-button[title*="Diode"] svg,
+    .toolbar-icon-button[title*="Current Source"] svg,
+    .toolbar-icon-button[title*="Potentiometer"] svg,
+    .toolbar-icon-button[title*="Transformer"] svg,
+    .toolbar-icon-button[title*="Fuse"] svg,
+    .toolbar-icon-button[title*="LED"] svg,
+    .toolbar-icon-button[title*="Lamp"] svg,
+    .toolbar-icon-button[title*="Text"] svg,
+    .toolbar-icon-button[title*="Voltmeter/Scope"] svg,
+    .toolbar-icon-button[title*="Ohmmeter"] svg,
+    .toolbar-icon-button[title*="Ammeter"] svg,
+    .toolbar-icon-button[title*="Wattmeter"] svg,
+    .toolbar-icon-button[title*="DC Motor"] svg,
+    .toolbar-icon-button[title*="3-Phase Motor"] svg,
+    .toolbar-icon-button[title*="Voltage Source (2-terminal)"] svg,
+    .toolbar-icon-button[title*="Voltage Source (1-terminal)"] svg,
+    .toolbar-icon-button[title*="Switch"] svg,
+    .toolbar-icon-button[title*="Op Amp"] svg {
+        opacity: 0 !important;
+    }
+
+    .toolbar-icon-button[title*="Wire"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMmgyMCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Resistor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVqb2luPSJiZXZlbCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoNCBsMiAtNSBsNCAxMCBsNCAtMTAgbDQgMTAgbDIgLTUgaDIiIC8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Capacitor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDN2NyBtLTYgMGgxMiBtLTEyIDRoMTIgbS02IDB2NyIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Inductor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoMyBjMCAtMy41IDQgLTMuNSA0IDAgYzAgLTMuNSA0IC0zLjUgNCAwIGMwIC0zLjUgNCAtMy41IDQgMCBoNSIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ground"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDUgdjcgTTcgMTIgaDEwIE05IDE2IGg2IE0xMSAyMCBoMiIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Diode"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTIgMTIgaDYgbTAgLTUgdjEwIGw4IC01IGwtOCAtNSBtOCAwIHYxMCBtMCAtNSBoNiIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Current Source"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMiAxNyB2LTEwIG0tMyAzIGwzIC0zIGwzIDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Potentiometer"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxNiBoMyBsMiAtNSBsNCAxMCBsNCAtMTAgbDQgMTAgbDIgLTUgaDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIxLjgiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lam9pbj0iYmV2ZWwiLz48cGF0aCBkPSJNMTIgMiB2OSBtLTMgLTMgbDMgMyBsMyAtMyIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Transformer"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNyA0IGMtMy41IDAgLTMuNSA0IDAgNCBjLTMuNSAwIC0zLjUgNCAwIDQgYy0zLjUgMCAtMy41IDQgMCA0IGMtMy41IDAgLTMuNSA0IDAgNCBNMTcgNCBjMy41IDAgMy41IDQgMCA0IGMzLjUgMCAzLjUgNCAwIDQgYzMuNSAwIDMuNSA0IDAgNCBjMy41IDAgMy41IDQgMCA0IE0xMSA0djE2IE0xMyA0djE2IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Fuse"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSI2IiB5PSI5IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMiAxMiBoMjAiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="LED"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyAxNGg1IG0wIC01djEwIGw3IC01IGwtNyAtNSBtNyAwdjEwIG0wIC01aDUgTTE0IDcgbDMgLTMgbTAgMCB2MyBtMCAtMyBoLTMgTTE4IDkgbDMgLTMgbTAgMCB2MyBtMCAtMyBoLTMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIxLjgiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Lamp"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIE04IDggbDggOCBNOCAxNiBsOCAtOCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Text"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA2IGgxNCBNMTIgNiB2MTQiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyLjUiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltmeter/Scope"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlY8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ohmmeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPs6pPC90ZXh0Pjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ammeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkE8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Wattmeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlc8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="DC Motor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk08L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="3-Phase Motor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjNDc1NTY5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4zfjwvdGV4dD48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltage Source (2-terminal)"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoOCBNMTQgMTIgaDggTTEwIDYgdjEyIE0xNCA4IHY4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltage Source (1-terminal)"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjAgdi0xMiBsLTMgMyBtMyAtMyBsMyAzIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSI3IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+K1Y8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Switch"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoNCBNMTggMTIgaDQgTTYgMTIgbDEwIC00IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjYiIGN5PSIxMiIgcj0iMS41IiBmaWxsPSIjNDc1NTY5Ii8+PGNpcmNsZSBjeD0iMTciIGN5PSIxMiIgcj0iMS41IiBmaWxsPSIjNDc1NTY5Ii8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Op Amp"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA0IGwxMiA4IGwtMTIgOCB6IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xIDggaDQgbS00IDggaDQgbTEyIC00IGg1IE03IDggaDIgTTcgMTYgaDIgTTggMTUgdjIiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    
+    /* Allow toolbar to wrap on smaller screens */
+    .toolbar-icon-button {
+        display: inline-block !important;
+    }
+    
+    
+
+    /* Hide Zoom 100% button */
+    .toolbar-icon-button[title*="Zoom 100%"] {
+        display: none !important;
+    }
+    
+
+    /* Hide Duplicate button */
+    .toolbar-icon-button[title*="Duplicate"] {
+        display: none !important;
+    }
+    
+</style>
+<script>
+function openTab(tabName, event) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-link");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    if(tabName !== 'Simulator') {
+        document.getElementById(tabName).style.display = "block";
+    }
+    event.currentTarget.className += " active";
+}
+</script>
+
+
+
+
+<!-- START CUSTOM GRAPH MODAL -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+#customGraphModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    height: 450px;
+    background: var(--panel-bg, #0f172a);
+    border: 1px solid var(--border-color, #1e293b);
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    z-index: 999999;
+    padding: 20px;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+}
+#customGraphModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    color: var(--text-color, #f1f5f9);
+    border-bottom: 1px solid var(--border-color, #1e293b);
+    padding-bottom: 10px;
+}
+#customGraphModalHeader h2 { margin: 0; font-size: 18px; font-weight: 600; }
+#customGraphCloseBtn { background: transparent; border: none; color: var(--text-muted, #94a3b8); font-size: 24px; cursor: pointer; line-height: 1; }
+#customGraphCloseBtn:hover { color: #ef4444; }
+#customGraphCanvasContainer { width: 100%; height: calc(100% - 50px); }
+#btnCustomGraphToolbar { background: #38bdf8; color: #0b0f19 !important; font-weight: bold; margin-left: 10px; border: none; }
+#btnCustomGraphToolbar:hover { background: #0284c7; }
+
+    /* Premium Selection State (No Grey Background) */
+    .toolbar-icon-button {
+        background-color: transparent !important;
+        opacity: 0.5 !important;
+        transition: all 0.2s ease !important;
+    }
+    .toolbar-icon-button:hover {
+        opacity: 0.8 !important;
+    }
+    .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
+    .toolbar-icon-button[style*="#1e293b"],
+    .toolbar-icon-button[style*="background-color"] {
+        background-color: transparent !important;
+        opacity: 1 !important;
+        transform: scale(1.15) !important;
+        filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.5)) !important;
+    }
+    
+
+    /* Absolute Foolproof CSS Base64 SVG Replacement - TARGETING INLINE SVG */
+    .toolbar-icon-button[title*="Wire"] svg,
+    .toolbar-icon-button[title*="Resistor"] svg,
+    .toolbar-icon-button[title*="Capacitor"] svg,
+    .toolbar-icon-button[title*="Inductor"] svg,
+    .toolbar-icon-button[title*="Ground"] svg,
+    .toolbar-icon-button[title*="Diode"] svg,
+    .toolbar-icon-button[title*="Current Source"] svg,
+    .toolbar-icon-button[title*="Potentiometer"] svg,
+    .toolbar-icon-button[title*="Transformer"] svg,
+    .toolbar-icon-button[title*="Fuse"] svg,
+    .toolbar-icon-button[title*="LED"] svg,
+    .toolbar-icon-button[title*="Lamp"] svg,
+    .toolbar-icon-button[title*="Text"] svg,
+    .toolbar-icon-button[title*="Voltmeter/Scope"] svg,
+    .toolbar-icon-button[title*="Ohmmeter"] svg,
+    .toolbar-icon-button[title*="Ammeter"] svg,
+    .toolbar-icon-button[title*="Wattmeter"] svg,
+    .toolbar-icon-button[title*="DC Motor"] svg,
+    .toolbar-icon-button[title*="3-Phase Motor"] svg,
+    .toolbar-icon-button[title*="Voltage Source (2-terminal)"] svg,
+    .toolbar-icon-button[title*="Voltage Source (1-terminal)"] svg,
+    .toolbar-icon-button[title*="Switch"] svg,
+    .toolbar-icon-button[title*="Op Amp"] svg {
+        opacity: 0 !important;
+    }
+
+    .toolbar-icon-button[title*="Wire"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMmgyMCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Resistor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVqb2luPSJiZXZlbCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoNCBsMiAtNSBsNCAxMCBsNCAtMTAgbDQgMTAgbDIgLTUgaDIiIC8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Capacitor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDN2NyBtLTYgMGgxMiBtLTEyIDRoMTIgbS02IDB2NyIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Inductor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoMyBjMCAtMy41IDQgLTMuNSA0IDAgYzAgLTMuNSA0IC0zLjUgNCAwIGMwIC0zLjUgNCAtMy41IDQgMCBoNSIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ground"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEyIDUgdjcgTTcgMTIgaDEwIE05IDE2IGg2IE0xMSAyMCBoMiIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Diode"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTIgMTIgaDYgbTAgLTUgdjEwIGw4IC01IGwtOCAtNSBtOCAwIHYxMCBtMCAtNSBoNiIgLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Current Source"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMiAxNyB2LTEwIG0tMyAzIGwzIC0zIGwzIDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Potentiometer"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxNiBoMyBsMiAtNSBsNCAxMCBsNCAtMTAgbDQgMTAgbDIgLTUgaDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIxLjgiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lam9pbj0iYmV2ZWwiLz48cGF0aCBkPSJNMTIgMiB2OSBtLTMgLTMgbDMgMyBsMyAtMyIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Transformer"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNyA0IGMtMy41IDAgLTMuNSA0IDAgNCBjLTMuNSAwIC0zLjUgNCAwIDQgYy0zLjUgMCAtMy41IDQgMCA0IGMtMy41IDAgLTMuNSA0IDAgNCBNMTcgNCBjMy41IDAgMy41IDQgMCA0IGMzLjUgMCAzLjUgNCAwIDQgYzMuNSAwIDMuNSA0IDAgNCBjMy41IDAgMy41IDQgMCA0IE0xMSA0djE2IE0xMyA0djE2IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Fuse"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSI2IiB5PSI5IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMiAxMiBoMjAiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="LED"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMyAxNGg1IG0wIC01djEwIGw3IC01IGwtNyAtNSBtNyAwdjEwIG0wIC01aDUgTTE0IDcgbDMgLTMgbTAgMCB2MyBtMCAtMyBoLTMgTTE4IDkgbDMgLTMgbTAgMCB2MyBtMCAtMyBoLTMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIxLjgiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Lamp"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIE04IDggbDggOCBNOCAxNiBsOCAtOCIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Text"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA2IGgxNCBNMTIgNiB2MTQiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyLjUiIGZpbGw9Im5vbmUiLz48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltmeter/Scope"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlY8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ohmmeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPs6pPC90ZXh0Pjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Ammeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkE8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Wattmeter"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlc8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="DC Motor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yIDEyIGgyIG0xNiAwIGgyIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNi41IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiM0NzU1NjkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk08L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="3-Phase Motor"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNiIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjNDc1NTY5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4zfjwvdGV4dD48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltage Source (2-terminal)"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoOCBNMTQgMTIgaDggTTEwIDYgdjEyIE0xNCA4IHY4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Voltage Source (1-terminal)"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjAgdi0xMiBsLTMgMyBtMyAtMyBsMyAzIiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSI3IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+K1Y8L3RleHQ+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Switch"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMiBoNCBNMTggMTIgaDQgTTYgMTIgbDEwIC00IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjYiIGN5PSIxMiIgcj0iMS41IiBmaWxsPSIjNDc1NTY5Ii8+PGNpcmNsZSBjeD0iMTciIGN5PSIxMiIgcj0iMS41IiBmaWxsPSIjNDc1NTY5Ii8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="Op Amp"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA0IGwxMiA4IGwtMTIgOCB6IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xIDggaDQgbS00IDggaDQgbTEyIC00IGg1IE03IDggaDIgTTcgMTYgaDIgTTggMTUgdjIiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    
+    /* Allow toolbar to wrap on smaller screens */
+    .toolbar-icon-button {
+        display: inline-block !important;
+    }
+    
+    
+
+    /* Hide Zoom 100% button */
+    .toolbar-icon-button[title*="Zoom 100%"] {
+        display: none !important;
+    }
+    
+
+    /* Hide Duplicate button */
+    .toolbar-icon-button[title*="Duplicate"] {
+        display: none !important;
+    }
+    
+</style>
+<div id="customGraphModal">
+    <div id="customGraphModalHeader">
+        <div style="display:flex; align-items:center;">
+            <h2>Live Oscilloscope</h2>
+            <select id="customGraphSelector" style="background:#1e293b; color:#f1f5f9; border:1px solid #334155; border-radius:4px; padding:4px 8px; margin-left:15px; font-family:'Outfit'; outline:none; font-size:14px; cursor:pointer;">
+                <option value="all">All Probes</option>
+            </select>
+        </div>
+        <button id="customGraphCloseBtn">&times;</button>
+    </div>
+    <div id="customGraphCanvasContainer">
+        <canvas id="customGraphCanvas"></canvas>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var modal = document.getElementById("customGraphModal");
+    var closeBtn = document.getElementById("customGraphCloseBtn");
+    var chartInstance = null;
+    
+    var chartLabels = [];
+    const MAX_POINTS = 1000;
+    var updateCounter = 0;
+    var probeDataMap = {};
+    var colorPalette = ['#38bdf8', '#fbbf24', '#a3e635', '#f87171', '#c084fc'];
+
+    closeBtn.onclick = function() { modal.style.display = "none"; };
+
+    // Make modal draggable
+    var header = document.getElementById("customGraphModalHeader");
+    var isDragging = false;
+    var dragOffsetX, dragOffsetY;
+    header.style.cursor = "move";
+    
+    header.addEventListener("mousedown", function(e) {
+        if (e.target === closeBtn || e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
+        isDragging = true;
+        var rect = modal.getBoundingClientRect();
+        if (modal.style.transform !== "none") {
+            modal.style.left = rect.left + "px";
+            modal.style.top = rect.top + "px";
+            modal.style.transform = "none";
+        }
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+    });
+    
+    document.addEventListener("mousemove", function(e) {
+        if (!isDragging) return;
+        modal.style.left = (e.clientX - dragOffsetX) + "px";
+        modal.style.top = (e.clientY - dragOffsetY) + "px";
+    });
+    
+    document.addEventListener("mouseup", function() {
+        isDragging = false;
+    });
+
+    function formatUnit(value, unit) {
+        if (value === 0) return '0 ' + unit;
+        var absVal = Math.abs(value);
+        if (absVal >= 1e6) return (value / 1e6).toFixed(2) + ' M' + unit;
+        if (absVal >= 1e3) return (value / 1e3).toFixed(2) + ' k' + unit;
+        if (absVal >= 1) return value.toFixed(2) + ' ' + unit;
+        if (absVal >= 1e-3) return (value * 1e3).toFixed(2) + ' m' + unit;
+        if (absVal >= 1e-6) return (value * 1e6).toFixed(2) + ' µ' + unit;
+        if (absVal >= 1e-9) return (value * 1e9).toFixed(2) + ' n' + unit;
+        return value.toExponential(2) + ' ' + unit;
+    }
+
+    function initChart() {
+        var ctx = document.getElementById("customGraphCanvas").getContext("2d");
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels: chartLabels, datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: { title: { display: true, text: 'Time (s)', color: '#94a3b8' }, ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: '#1e293b' } },
+                    yV: { 
+                        type: 'linear', display: false, position: 'left', 
+                        title: { display: true, text: 'Voltage', color: '#94a3b8' }, 
+                        ticks: { color: '#94a3b8', callback: function(value) { return formatUnit(value, 'V'); } }, 
+                        grid: { color: '#1e293b' } 
+                    },
+                    yA: { 
+                        type: 'linear', display: false, position: 'right', 
+                        title: { display: true, text: 'Current', color: '#94a3b8' }, 
+                        ticks: { color: '#94a3b8', callback: function(value) { return formatUnit(value, 'A'); } }, 
+                        grid: { drawOnChartArea: false } 
+                    }
+                },
+                plugins: { legend: { display: true, labels: { color: '#f1f5f9' } }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + formatUnit(context.raw, context.dataset.yAxisID === 'yV' ? 'V' : 'A'); } } } }
+            }
+        });
+    }
+
+    var initInterval = setInterval(function() {
+        var undoIcon = document.querySelector(".cirjsicon-ccw");
+        var topBar = undoIcon ? undoIcon.parentNode : document.querySelector(".gwt-MenuBar-horizontal");
+        var sim = window.CircuitJS1;
+        
+        if (topBar && sim && typeof Chart !== 'undefined') {
+            clearInterval(initInterval);
+            
+            var btn = document.createElement("button");
+            btn.id = "btnCustomGraphToolbar";
+            btn.className = "topButton";
+            btn.innerText = "Open Graph";
+            btn.onclick = function() {
+                modal.style.display = "block";
+                if (!chartInstance) initChart();
+            };
+                        var btn = document.createElement("button");
+            btn.id = "btnCustomGraphToolbar";
+            btn.className = "topButton";
+            btn.innerText = "Open Graph";
+            btn.onclick = function() {
+                modal.style.display = "block";
+                if (!chartInstance) initChart();
+            };
+            topBar.appendChild(btn);
+            
+            // Fix Auto-Run and inject separate RUN/STOP buttons
+            setTimeout(function() {
+                if(typeof sim.setSimRunning === 'function') sim.setSimRunning(false);
+                else if(typeof sim.setStopped === 'function') sim.setStopped(true);
+                
+                // Hide native STOP/RUN button permanently
+                setInterval(function() {
+                    var allNodes = document.body.getElementsByTagName('*');
+                    for (var i = 0; i < allNodes.length; i++) {
+                        if ((allNodes[i].className || '').includes('topButton')) continue;
+                        var text = (allNodes[i].textContent || '').trim();
+                        if (/^.?(?:\s*)(?:RUN|STOP)$/i.test(text)) {
+                            if (allNodes[i].tagName !== 'BODY' && allNodes[i].tagName !== 'HTML') {
+                                allNodes[i].style.display = 'none';
+                                allNodes[i].style.opacity = '0';
+                                allNodes[i].style.pointerEvents = 'none';
+                            }
+                        }
+                    }
+                }, 500);
+                
+                
+                
+    
+                
+                
+    
+                
+                
+                
+                // Safely enable flex wrapping on the specific toolbar container
+                setInterval(function() {
+                    var firstBtn = document.querySelector('.toolbar-icon-button');
+                    if (firstBtn && firstBtn.parentNode && firstBtn.parentNode.tagName === 'DIV') {
+                        // Only apply to the immediate wrapper
+                        firstBtn.parentNode.style.flexWrap = 'wrap';
+                        firstBtn.parentNode.style.whiteSpace = 'normal';
+                        // Do NOT force height: auto on everything!
+                    }
+                }, 1000);
+    
+                
+                
+    
+                
+                
+    
+                
+                
+    
+                
+                
+                
+                
+    
+                
+                
+    
+                
+                
+    
+                
+            }, 100);
+
+            sim.onupdate = function() {
+                if (modal.style.display !== "block") return;
+                
+                updateCounter++;
+                if(updateCounter % 3 !== 0) return; 
+                
+                var time = sim.getTime();
+                var elements = sim.getElements();
+                
+                var currentProbes = [];
+                var probeIndex = 0;
+                
+                for (var i = 0; i < elements.length; i++) {
+                    var info = elements[i].getInfo();
+                    if (info && info[0]) {
+                        var name = info[0].toLowerCase();
+                        var isV = name.includes("voltmeter") || name.includes("probe");
+                        var isA = name.includes("ammeter");
+                        
+                        if (isV || isA) {
+                            var val = 0;
+                            if (isA && typeof elements[i].getCurrent === 'function') val = elements[i].getCurrent();
+                            else if (isV && typeof elements[i].getVoltageDiff === 'function') val = elements[i].getVoltageDiff();
+                            else if (isV) val = elements[i].getVoltage(0);
+                            
+                            var pId = "probe_" + probeIndex;
+                            var typeLabel = isV ? "Voltmeter" : "Ammeter";
+                            var label = typeLabel + " " + (probeIndex + 1);
+                            
+                            currentProbes.push({ id: pId, val: val, label: label, type: isV ? "V" : "A" });
+                            probeIndex++;
+                        }
+                    }
+                }
+                
+                chartLabels.push(time.toFixed(4));
+                if (chartLabels.length > MAX_POINTS) chartLabels.shift();
+                
+                currentProbes.forEach(function(p) {
+                    if (!probeDataMap[p.id]) probeDataMap[p.id] = { type: p.type, label: p.label, data: new Array(chartLabels.length - 1).fill(null) };
+                    probeDataMap[p.id].data.push(p.val);
+                    if (probeDataMap[p.id].data.length > MAX_POINTS) probeDataMap[p.id].data.shift();
+                });
+                
+                Object.keys(probeDataMap).forEach(function(pId) {
+                    var stillExists = currentProbes.some(function(cp) { return cp.id === pId; });
+                    if (!stillExists) {
+                        probeDataMap[pId].data.push(null);
+                        if (probeDataMap[pId].data.length > MAX_POINTS) probeDataMap[pId].data.shift();
+                    }
+                });
+                
+                var selector = document.getElementById("customGraphSelector");
+                if (selector && (selector.options.length - 1) !== currentProbes.length) {
+                    var selectedVal = selector.value;
+                    selector.innerHTML = '<option value="all">All Probes</option>';
+                    currentProbes.forEach(function(p) {
+                        var opt = document.createElement("option");
+                        opt.value = p.id;
+                        opt.textContent = p.label;
+                        selector.appendChild(opt);
+                    });
+                    selector.value = selectedVal || "all";
+                    if(selector.selectedIndex === -1) selector.value = "all";
+                }
+                
+                if (chartInstance) {
+                    var selected = document.getElementById("customGraphSelector").value;
+                    var activeDatasets = [];
+                    var showV = false;
+                    var showA = false;
+                    
+                    currentProbes.forEach(function(p, idx) {
+                        if (selected === "all" || selected === p.id) {
+                            if (p.type === "V") showV = true;
+                            if (p.type === "A") showA = true;
+                            
+                            var color = colorPalette[idx % colorPalette.length];
+                            activeDatasets.push({
+                                label: p.label,
+                                data: probeDataMap[p.id].data,
+                                borderColor: color,
+                                backgroundColor: color,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.1,
+                                fill: false,
+                                yAxisID: p.type === "V" ? 'yV' : 'yA'
+                            });
+                        }
+                    });
+                    
+                    chartInstance.data.datasets = activeDatasets;
+                    chartInstance.options.scales.yV.display = showV;
+                    chartInstance.options.scales.yA.display = showA;
+                    
+                    chartInstance.update();
+                }
+            };
+        }
+    }, 500);
+});
+</script>
+<!-- END CUSTOM GRAPH MODAL -->
+  </body>
+ </html>
