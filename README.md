@@ -13,7 +13,7 @@ Welcome to the **Electric Circuits Lab**, a next-generation, interactive web-bas
 ## 🚀 Live Demo
 
 The simulator is deployed and live! You can access it instantly:
-**[Launch Electric Circuits Lab](https://digitallabb1.netlify.app/)**
+**[Launch Electric Circuits Lab](playful-buttercream-ee050a.netlify.app)**
 
 ## 🛠️ Built With
 
