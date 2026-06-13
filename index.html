@@ -2534,9 +2534,13 @@ document.addEventListener("DOMContentLoaded", function() {
                         var firstBtn = btns[0];
                         if (firstBtn && firstBtn.parentNode && firstBtn.parentNode.tagName === 'DIV') {
                             // Only apply to the immediate wrapper
+                            firstBtn.parentNode.style.display = 'flex';
                             firstBtn.parentNode.style.flexWrap = 'wrap';
                             firstBtn.parentNode.style.whiteSpace = 'normal';
                             firstBtn.parentNode.style.alignItems = 'flex-start';
+                            firstBtn.parentNode.style.height = 'auto';
+                            firstBtn.parentNode.style.minHeight = '50px';
+                            firstBtn.parentNode.style.overflow = 'visible';
                         }
                         
                         // Inject labels into the buttons
