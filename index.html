@@ -2485,7 +2485,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // Safely apply toolbar-icon-button class periodically to ensure dynamically loaded buttons get it
                 setInterval(function() {
-                    var allBtns = document.querySelectorAll('button, .topButton, .gwt-Button, .gwt-ToggleButton, .gwt-PushButton');
+                    var allBtns = document.querySelectorAll('button:not(.tab-link):not(.topButton), .gwt-Button, .gwt-ToggleButton, .gwt-PushButton');
                     for(var i=0; i<allBtns.length; i++) {
                         if(!allBtns[i].classList.contains('hidden-by-me')) {
                             allBtns[i].classList.add('toolbar-icon-button');
