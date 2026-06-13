@@ -2131,20 +2131,25 @@ function openTab(tabName, event) {
     }
     
     /* Layout to show icon + text label below */
-    .toolbar-icon-button.toolbar-icon-button[title] {
-        display: inline-flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        height: auto !important;
-        min-height: 48px !important;
+    .toolbar-icon-button.has-label {
+        position: relative !important;
+        display: inline-block !important;
+        height: 50px !important;
         width: 52px !important;
-        background-position: center top 2px !important;
-        padding-top: 30px !important; /* Space for icon */
+        background-position: center top 4px !important;
         vertical-align: top !important;
-        margin: 4px 2px !important; 
+        margin: 2px 2px !important; 
         overflow: visible !important;
         box-sizing: border-box !important;
+    }
+    .toolbar-icon-button.has-label img.gwt-Image,
+    .toolbar-icon-button.has-label canvas {
+        position: absolute !important;
+        top: 4px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .toolbar-icon-button:hover {
@@ -2546,9 +2551,14 @@ document.addEventListener("DOMContentLoaded", function() {
                         // Inject labels into the buttons
                         for(var i=0; i<btns.length; i++) {
                             var btn = btns[i];
-                            if (btn.title && !btn.hasAttribute('data-labeled')) {
+                            var img = btn.querySelector('img');
+                            var btnTitle = btn.title || (img ? img.title : '');
+                            
+                            if (btnTitle && !btn.hasAttribute('data-labeled')) {
                                 btn.setAttribute('data-labeled', 'true');
-                                var rawName = btn.title.replace(/^Add\s+/i, '');
+                                btn.classList.add('has-label');
+                                
+                                var rawName = btnTitle.replace(/^Add\s+/i, '');
                                 
                                 // Shorten names to fit
                                 if(rawName === 'Voltage Source (2-terminal)') rawName = 'DC Volt';
@@ -2557,6 +2567,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                 
                                 var span = document.createElement('span');
                                 span.innerText = rawName;
+                                span.style.position = 'absolute';
+                                span.style.bottom = '2px';
+                                span.style.left = '0';
                                 span.style.display = 'block';
                                 span.style.fontSize = '9.5px'; 
                                 span.style.fontWeight = 'bold';
