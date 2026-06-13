@@ -2124,9 +2124,18 @@ function openTab(tabName, event) {
         background-color: transparent !important;
         opacity: 1 !important;
         filter: brightness(0) !important;
-        transform: scale(1.3) !important;
+        transform: scale(1.2) !important; /* Slightly smaller so labels fit well */
         transition: transform 0.2s ease !important;
         margin: 0 4px !important;
+        position: relative !important;
+        overflow: visible !important;
+    }
+    
+    /* Ensure parents allow the labels to drop down over the canvas */
+    .gwt-MenuBar, .gwt-MenuBar-horizontal, .gwt-HorizontalPanel,
+    .gwt-MenuBar table, .gwt-MenuBar tbody, .gwt-MenuBar tr, .gwt-MenuBar td,
+    .gwt-HorizontalPanel table, .gwt-HorizontalPanel tbody, .gwt-HorizontalPanel tr, .gwt-HorizontalPanel td {
+        overflow: visible !important;
     }
     
     .toolbar-icon-button:hover {
@@ -2487,8 +2496,45 @@ document.addEventListener("DOMContentLoaded", function() {
                 setInterval(function() {
                     var allBtns = document.querySelectorAll('button:not(.tab-link):not(.topButton), .gwt-Button, .gwt-ToggleButton, .gwt-PushButton');
                     for(var i=0; i<allBtns.length; i++) {
-                        if(!allBtns[i].classList.contains('hidden-by-me')) {
-                            allBtns[i].classList.add('toolbar-icon-button');
+                        var btn = allBtns[i];
+                        if(!btn.classList.contains('hidden-by-me')) {
+                            btn.classList.add('toolbar-icon-button');
+                            
+                            // Inject Labels for circuit components only
+                            var img = btn.querySelector('img');
+                            var btnTitle = btn.title || (img ? img.title : '');
+                            
+                            // Only label the Add and Select tools
+                            if (btnTitle && (btnTitle.match(/^Add /i) || btnTitle.match(/^Select/i) || btnTitle.match(/^Drag /i)) && !btn.hasAttribute('data-labeled')) {
+                                btn.setAttribute('data-labeled', 'true');
+                                
+                                var rawName = btnTitle.replace(/^Add\s+/i, '');
+                                
+                                // Shorten names to fit
+                                if(rawName === 'Voltage Source (2-terminal)') rawName = 'DC Volt';
+                                if(rawName === 'Voltage Source (1-terminal)') rawName = '+V Node';
+                                if(rawName === '3-Phase Motor') rawName = '3-Phase';
+                                if(rawName === 'Select/Drag') rawName = 'Select';
+                                
+                                var span = document.createElement('span');
+                                span.innerText = rawName;
+                                span.style.position = 'absolute';
+                                span.style.top = '100%';
+                                span.style.left = '50%';
+                                span.style.transform = 'translateX(-50%)';
+                                span.style.marginTop = '6px'; // Space below icon
+                                span.style.display = 'block';
+                                span.style.fontSize = '8px'; 
+                                span.style.fontWeight = 'bold';
+                                span.style.color = '#333';
+                                span.style.textAlign = 'center';
+                                span.style.whiteSpace = 'nowrap';
+                                span.style.pointerEvents = 'none'; // so clicks pass through to button
+                                span.style.fontFamily = 'sans-serif';
+                                span.style.zIndex = '1000';
+                                
+                                btn.appendChild(span);
+                            }
                         }
                     }
                 }, 1000);
