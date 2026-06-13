@@ -2126,15 +2126,32 @@ function openTab(tabName, event) {
         border-color: transparent !important;
         opacity: 1 !important;
         filter: brightness(0) !important;
-        transform: scale(1.2) !important;
-        margin: 0 4px !important;
+        transform: scale(1.1) !important;
         transition: all 0.2s ease !important;
     }
+    
+    /* Layout to show icon + text label below */
+    div.toolbar-icon-button[title] {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        height: auto !important;
+        min-height: 48px !important;
+        width: 52px !important;
+        background-position: center top 2px !important;
+        padding-top: 30px !important; /* Space for icon */
+        vertical-align: top !important;
+        margin: 4px 2px !important; 
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
     .toolbar-icon-button:hover {
         background: transparent !important;
         background-color: transparent !important;
         border-color: transparent !important;
-        transform: scale(1.35) !important;
+        transform: scale(1.2) !important;
     }
     .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
     .toolbar-icon-button[style*="#1e293b"],
@@ -2143,7 +2160,7 @@ function openTab(tabName, event) {
         background-color: transparent !important;
         border-color: transparent !important;
         opacity: 1 !important;
-        transform: scale(1.45) !important;
+        transform: scale(1.25) !important;
         filter: brightness(0) drop-shadow(0 4px 6px rgba(0,0,0,0.4)) !important;
     }
     
@@ -2510,14 +2527,45 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 
                 
-                // Safely enable flex wrapping on the specific toolbar container
+                // Safely enable flex wrapping on the specific toolbar container and add text labels
                 setInterval(function() {
-                    var firstBtn = document.querySelector('.toolbar-icon-button');
-                    if (firstBtn && firstBtn.parentNode && firstBtn.parentNode.tagName === 'DIV') {
-                        // Only apply to the immediate wrapper
-                        firstBtn.parentNode.style.flexWrap = 'wrap';
-                        firstBtn.parentNode.style.whiteSpace = 'normal';
-                        // Do NOT force height: auto on everything!
+                    var btns = document.querySelectorAll('.toolbar-icon-button');
+                    if (btns.length > 0) {
+                        var firstBtn = btns[0];
+                        if (firstBtn && firstBtn.parentNode && firstBtn.parentNode.tagName === 'DIV') {
+                            // Only apply to the immediate wrapper
+                            firstBtn.parentNode.style.flexWrap = 'wrap';
+                            firstBtn.parentNode.style.whiteSpace = 'normal';
+                            firstBtn.parentNode.style.alignItems = 'flex-start';
+                        }
+                        
+                        // Inject labels into the buttons
+                        for(var i=0; i<btns.length; i++) {
+                            var btn = btns[i];
+                            if (btn.title && !btn.hasAttribute('data-labeled')) {
+                                btn.setAttribute('data-labeled', 'true');
+                                var rawName = btn.title.replace(/^Add\s+/i, '');
+                                
+                                // Shorten names to fit
+                                if(rawName === 'Voltage Source (2-terminal)') rawName = 'DC Volt';
+                                if(rawName === 'Voltage Source (1-terminal)') rawName = '+V Node';
+                                if(rawName === '3-Phase Motor') rawName = '3-Phase';
+                                
+                                var span = document.createElement('span');
+                                span.innerText = rawName;
+                                span.style.display = 'block';
+                                span.style.fontSize = '9.5px'; 
+                                span.style.fontWeight = 'bold';
+                                span.style.color = '#333';
+                                span.style.textAlign = 'center';
+                                span.style.lineHeight = '1.1';
+                                span.style.width = '100%';
+                                span.style.pointerEvents = 'none'; // so clicks pass through to button
+                                span.style.fontFamily = 'sans-serif';
+                                
+                                btn.appendChild(span);
+                            }
+                        }
                     }
                 }, 1000);
     
