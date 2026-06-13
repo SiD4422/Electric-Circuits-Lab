@@ -2119,9 +2119,11 @@ function openTab(tabName, event) {
 #btnCustomGraphToolbar { background: #38bdf8; color: #0b0f19 !important; font-weight: bold; margin-left: 10px; border: none; }
 #btnCustomGraphToolbar:hover { background: #0284c7; }
 
-    /* Premium Selection State (No Grey Background) */
+    /* Premium Selection State (Pitch Black Icons) */
     .toolbar-icon-button {
+        background: transparent !important;
         background-color: transparent !important;
+        border-color: transparent !important;
         opacity: 1 !important;
         filter: brightness(0) !important;
         transform: scale(1.2) !important;
@@ -2129,12 +2131,17 @@ function openTab(tabName, event) {
         transition: all 0.2s ease !important;
     }
     .toolbar-icon-button:hover {
+        background: transparent !important;
+        background-color: transparent !important;
+        border-color: transparent !important;
         transform: scale(1.35) !important;
     }
     .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
     .toolbar-icon-button[style*="#1e293b"],
     .toolbar-icon-button[style*="background-color"] {
+        background: transparent !important;
         background-color: transparent !important;
+        border-color: transparent !important;
         opacity: 1 !important;
         transform: scale(1.45) !important;
         filter: brightness(0) drop-shadow(0 4px 6px rgba(0,0,0,0.4)) !important;
