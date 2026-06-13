@@ -2119,54 +2119,22 @@ function openTab(tabName, event) {
 #btnCustomGraphToolbar { background: #38bdf8; color: #0b0f19 !important; font-weight: bold; margin-left: 10px; border: none; }
 #btnCustomGraphToolbar:hover { background: #0284c7; }
 
-    /* Premium Selection State (Pitch Black Icons) */
+    /* Premium Selection State (No Grey Background) */
     .toolbar-icon-button {
-        background: transparent !important;
         background-color: transparent !important;
+        opacity: 1 !important;
+        filter: brightness(0) !important;
+        transform: scale(1.3) !important;
+        transition: transform 0.2s ease !important;
+        margin: 0 4px !important;
+    }
+    
+    .toolbar-icon-button:hover {
+        background: rgba(0, 0, 0, 0.05) !important;
         border-color: transparent !important;
         opacity: 1 !important;
         filter: brightness(0) !important;
-        transform: scale(1.1) !important;
-        transition: all 0.2s ease !important;
-    }
-    
-    /* Layout to show icon + text label below */
-    .toolbar-icon-button.has-label {
-        position: relative !important;
-        display: inline-block !important;
-        height: 50px !important;
-        width: 52px !important;
-        background-position: center top 4px !important;
-        vertical-align: top !important;
-        margin: 2px 2px !important; 
-        overflow: visible !important;
-        box-sizing: border-box !important;
-    }
-    .toolbar-icon-button.has-label img.gwt-Image,
-    .toolbar-icon-button.has-label canvas {
-        position: absolute !important;
-        top: 4px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .toolbar-icon-button:hover {
-        background: transparent !important;
-        background-color: transparent !important;
-        border-color: transparent !important;
-        transform: scale(1.2) !important;
-    }
-    .toolbar-icon-button[style*="rgb(30, 41, 59)"], 
-    .toolbar-icon-button[style*="#1e293b"],
-    .toolbar-icon-button[style*="background-color"] {
-        background: transparent !important;
-        background-color: transparent !important;
-        border-color: transparent !important;
-        opacity: 1 !important;
-        transform: scale(1.25) !important;
-        filter: brightness(0) drop-shadow(0 4px 6px rgba(0,0,0,0.4)) !important;
+        transform: scale(1.4) !important;
     }
     
 
@@ -2492,14 +2460,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 modal.style.display = "block";
                 if (!chartInstance) initChart();
             };
-                        var btn = document.createElement("button");
-            btn.id = "btnCustomGraphToolbar";
-            btn.className = "topButton";
-            btn.innerText = "Open Graph";
-            btn.onclick = function() {
-                modal.style.display = "block";
-                if (!chartInstance) initChart();
-            };
             topBar.appendChild(btn);
             
             // Fix Auto-Run and inject separate RUN/STOP buttons
@@ -2522,71 +2482,17 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                     }
                 }, 500);
-                
-                
-                
-    
-                
-                
-    
-                
-                
-                
-                // Safely enable flex wrapping on the specific toolbar container and add text labels
+
+                // Safely apply toolbar-icon-button class periodically to ensure dynamically loaded buttons get it
                 setInterval(function() {
-                    var btns = document.querySelectorAll('.toolbar-icon-button');
-                    if (btns.length > 0) {
-                        var firstBtn = btns[0];
-                        if (firstBtn && firstBtn.parentNode && firstBtn.parentNode.tagName === 'DIV') {
-                            // Only apply to the immediate wrapper
-                            firstBtn.parentNode.style.display = 'flex';
-                            firstBtn.parentNode.style.flexWrap = 'wrap';
-                            firstBtn.parentNode.style.whiteSpace = 'normal';
-                            firstBtn.parentNode.style.alignItems = 'flex-start';
-                            firstBtn.parentNode.style.height = 'auto';
-                            firstBtn.parentNode.style.minHeight = '50px';
-                            firstBtn.parentNode.style.overflow = 'visible';
-                        }
-                        
-                        // Inject labels into the buttons
-                        for(var i=0; i<btns.length; i++) {
-                            var btn = btns[i];
-                            var img = btn.querySelector('img');
-                            var btnTitle = btn.title || (img ? img.title : '');
-                            
-                            if (btnTitle && !btn.hasAttribute('data-labeled')) {
-                                btn.setAttribute('data-labeled', 'true');
-                                btn.classList.add('has-label');
-                                
-                                var rawName = btnTitle.replace(/^Add\s+/i, '');
-                                
-                                // Shorten names to fit
-                                if(rawName === 'Voltage Source (2-terminal)') rawName = 'DC Volt';
-                                if(rawName === 'Voltage Source (1-terminal)') rawName = '+V Node';
-                                if(rawName === '3-Phase Motor') rawName = '3-Phase';
-                                
-                                var span = document.createElement('span');
-                                span.innerText = rawName;
-                                span.style.position = 'absolute';
-                                span.style.bottom = '2px';
-                                span.style.left = '0';
-                                span.style.display = 'block';
-                                span.style.fontSize = '9.5px'; 
-                                span.style.fontWeight = 'bold';
-                                span.style.color = '#333';
-                                span.style.textAlign = 'center';
-                                span.style.lineHeight = '1.1';
-                                span.style.width = '100%';
-                                span.style.pointerEvents = 'none'; // so clicks pass through to button
-                                span.style.fontFamily = 'sans-serif';
-                                
-                                btn.appendChild(span);
-                            }
+                    var allBtns = document.querySelectorAll('button, .topButton, .gwt-Button, .gwt-ToggleButton, .gwt-PushButton');
+                    for(var i=0; i<allBtns.length; i++) {
+                        if(!allBtns[i].classList.contains('hidden-by-me')) {
+                            allBtns[i].classList.add('toolbar-icon-button');
                         }
                     }
                 }, 1000);
     
-                
                 
     
                 
