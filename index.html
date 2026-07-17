@@ -2497,6 +2497,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     var allBtns = document.querySelectorAll('button:not(.tab-link):not(.topButton), .gwt-Button, .gwt-ToggleButton, .gwt-PushButton');
                     for(var i=0; i<allBtns.length; i++) {
                         var btn = allBtns[i];
+                        if(btn.closest && btn.closest('.gwt-DialogBox')) continue; // Exclude modal dialog buttons
                         if(!btn.classList.contains('hidden-by-me')) {
                             btn.classList.add('toolbar-icon-button');
                             
