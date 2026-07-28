@@ -454,7 +454,11 @@
     .toolbar-icon-button[title*="Inductor"] svg,
     .toolbar-icon-button[title*="Ground"] svg,
     .toolbar-icon-button[title*="Diode"] svg,
-    .toolbar-icon-button[title*="Current Source"] svg,
+    .toolbar-icon-button[title*="Current Source"]:not([title*="Controlled"]) svg,
+    .toolbar-icon-button[title*="VCVS"] svg,
+    .toolbar-icon-button[title*="VCCS"] svg,
+    .toolbar-icon-button[title*="CCVS"] svg,
+    .toolbar-icon-button[title*="CCCS"] svg,
     .toolbar-icon-button[title*="Potentiometer"] svg,
     .toolbar-icon-button[title*="Transformer"] svg,
     .toolbar-icon-button[title*="Fuse"] svg,
@@ -516,7 +520,7 @@
         background-size: 26px !important;
     }
 
-    .toolbar-icon-button[title*="Current Source"] {
+    .toolbar-icon-button[title*="Current Source"]:not([title*="Controlled"]) {
         background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xMiAxNyB2LTEwIG0tMyAzIGwzIC0zIGwzIDMiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
         background-repeat: no-repeat !important;
         background-position: center !important;
@@ -630,6 +634,34 @@
 
     .toolbar-icon-button[title*="Op Amp"] {
         background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSA0IGwxMiA4IGwtMTIgOCB6IiBzdHJva2U9IiM0NzU1NjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0xIDggaDQgbS00IDggaDQgbTEyIC00IGg1IE03IDggaDIgTTcgMTYgaDIgTTggMTUgdjIiIHN0cm9rZT0iIzQ3NTU2OSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="VCVS"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjEyLDIgMjIsMTIgMTIsMjIgMiwxMiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNi41IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VkNWUzwvdGV4dD48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="VCCS"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjEyLDIgMjIsMTIgMTIsMjIgMiwxMiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNi41IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VkNDUzwvdGV4dD48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="CCVS"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjEyLDIgMjIsMTIgMTIsMjIgMiwxMiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNi41IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q0NWUzwvdGV4dD48L3N2Zz4=') !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 26px !important;
+    }
+
+    .toolbar-icon-button[title*="CCCS"] {
+        background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cG9seWdvbiBwb2ludHM9IjEyLDIgMjIsMTIgMTIsMjIgMiwxMiIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuOCIgZmlsbD0ibm9uZSIvPjx0ZXh0IHg9IjEyIiB5PSIxNSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNi41IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzQ3NTU2OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q0NDUzwvdGV4dD48L3N2Zz4=') !important;
         background-repeat: no-repeat !important;
         background-position: center !important;
         background-size: 26px !important;
